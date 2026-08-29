@@ -17,7 +17,7 @@ Kode bisnis seperti kode lokasi, Vendor, komoditas, kebutuhan pakan, dan Batch d
 
 ## Fitur Utama
 
-- Autentikasi pengguna aktif, Remember Me, Logout aman, dan perubahan password mandiri.
+- Autentikasi pengguna aktif, registrasi Admin mandiri melalui URL langsung, Remember Me, Logout aman, dan perubahan password mandiri.
 - Dua role: **Admin** dan **Manager**.
 - Dashboard KPI, grafik stok, tren aktivitas transaksi, dan aktivitas terbaru.
 - Pengelolaan master data dengan pencarian, filter, detail, dan status aktif/nonaktif.
@@ -28,6 +28,12 @@ Kode bisnis seperti kode lokasi, Vendor, komoditas, kebutuhan pakan, dan Batch d
 - Transaksi stok atomik dengan validasi saldo dan pemeriksaan dependensi sebelum perubahan/penghapusan.
 - Ekspor laporan CSV/XLSX, halaman Print, dan unduhan PDF.
 - Infrastruktur session, cache, dan queue berbasis database.
+
+### Registrasi Admin
+
+Registrasi tersedia bagi guest dengan membuka `/register` secara langsung dan tidak ditautkan dari halaman Login, navbar, sidebar, maupun Dashboard. Role dan status tidak dipilih oleh pengguna: server selalu membuat akun sebagai **Admin** berstatus **ACTIVE**.
+
+Setelah registrasi berhasil, pengguna langsung diautentikasi menggunakan session normal, session ID diregenerasi, lalu masuk ke Dashboard sebagai Admin. Registrasi tidak mengaktifkan Remember Me; setelah session berakhir, pengguna masuk kembali melalui halaman Login seperti biasa.
 
 ## Teknologi
 

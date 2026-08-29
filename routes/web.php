@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountLookupController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ChartOfAccountController;
 use App\Http\Controllers\CommodityController;
 use App\Http\Controllers\DashboardController;
@@ -23,6 +24,11 @@ Route::get('/', fn () => redirect()->route(auth()->check() ? 'dashboard' : 'logi
 Route::middleware('guest')->controller(AuthenticatedSessionController::class)->group(function () {
     Route::get('/login', 'create')->name('login');
     Route::post('/login', 'store')->name('login.store');
+});
+
+Route::middleware('guest')->controller(RegisterController::class)->group(function () {
+    Route::get('/register', 'create')->name('register');
+    Route::post('/register', 'store')->middleware('throttle:5,1')->name('register.store');
 });
 
 Route::middleware(['auth', 'active'])->group(function () {
