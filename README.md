@@ -19,7 +19,7 @@ Kode bisnis seperti kode lokasi, Vendor, komoditas, kebutuhan pakan, dan Batch d
 
 - Autentikasi pengguna aktif, Remember Me, Logout aman, dan perubahan password mandiri.
 - Dua role: **Admin** dan **Manager**.
-- Dashboard KPI, grafik stok, tren aktivitas, dan aktivitas terbaru.
+- Dashboard KPI, grafik stok, tren aktivitas, aktivitas per akun Admin, dan aktivitas terbaru.
 - Pengelolaan master data dengan pencarian, filter, detail, dan status aktif/nonaktif.
 - Kontak WhatsApp pada nomor Vendor yang valid.
 - CRUD modal dengan fallback halaman penuh tanpa JavaScript.
@@ -169,7 +169,7 @@ Pada instalasi baru:
 php artisan migrate --seed
 ```
 
-Perintah tersebut membuat seluruh tabel, termasuk `sessions`, `cache`, `jobs`, dan tabel domain Tambak Pro, kemudian mengisi role, akun demo, master awal, transaksi contoh, saldo stok, dan AuditLog.
+Perintah tersebut membuat seluruh tabel, termasuk `sessions`, `cache`, `jobs`, dan tabel domain Tambak Pro, kemudian mengisi role, akun demo, master awal, transaksi, saldo stok, dan AuditLog. Pada environment `local` atau `testing`, proses ini juga membuat dataset demo besar secara otomatis.
 
 Untuk menghapus seluruh isi database lalu membuat ulang data awal:
 
@@ -252,6 +252,7 @@ Perintah tersebut lebih berat daripada menjalankan `php artisan serve` dan `npm 
 5. Pembibitan, perubahan jumlah, pemindahan stok, dan pemberian pakan.
 6. Saldo `pond_stocks`.
 7. AuditLog.
+8. Dataset `LargeDemoSeeder` khusus environment `local` atau `testing`.
 
 Seeder menggunakan identifier tetap dan `updateOrCreate` sehingga dapat dijalankan ulang untuk data awal. `UserSeeder` tidak menimpa password atau status akun target yang sudah ada.
 
@@ -263,13 +264,13 @@ php artisan db:seed
 
 ### Large Demo Seeder
 
-`LargeDemoSeeder` bersifat **opsional** dan tidak dipanggil otomatis oleh `DatabaseSeeder`:
+`LargeDemoSeeder` dipanggil otomatis oleh `DatabaseSeeder` pada environment `local` dan `testing`. Artinya, `php artisan migrate --seed` atau `php artisan migrate:fresh --seed` pada lingkungan tersebut langsung menghasilkan dataset besar. Seeder tetap dapat dijalankan secara eksplisit bila perlu:
 
 ```bash
 php artisan db:seed --class=LargeDemoSeeder
 ```
 
-Seeder ini hanya dapat berjalan pada environment `local` atau `testing`. Data menggunakan namespace `LDM-*` dan mencakup:
+Seeder ini tidak pernah dijalankan otomatis pada production dan akan menolak eksekusi langsung di luar environment `local` atau `testing`. Data menggunakan namespace `LDM-*` dan mencakup:
 
 - 5 Area, 25 Tambak, dan 500 Petak.
 - 500 Vendor.
@@ -279,7 +280,7 @@ Seeder ini hanya dapat berjalan pada environment `local` atau `testing`. Data me
 - Masing-masing 500 transaksi Pembibitan, Pemindahan Stok, Perubahan Jumlah, dan Pemberian Pakan.
 - Saldo stok dan AuditLog yang sesuai dengan transaksi demo.
 
-Seluruh attribution transaksi demo menggunakan Fikri sebagai Admin. Seeder bersifat transactional, deterministic, dan idempotent selama Petak atau Batch `LDM-*` belum dipakai oleh transaksi biasa. Jika namespace atau ledger demo sudah dipakai data non-demo, seeder membatalkan proses untuk melindungi konsistensi stok dan riwayat.
+Transaksi baru pada dataset besar dibagikan secara round-robin dan deterministik kepada sepuluh akun Admin, sehingga setiap Admin memperoleh sekitar 50 transaksi per jenis beserta AuditLog yang konsisten. Seeder bersifat transactional, deterministic, dan idempotent selama Petak atau Batch `LDM-*` belum dipakai oleh transaksi biasa. Actor pada riwayat yang sudah ada tidak ditulis ulang saat seeder dijalankan kembali. Jika namespace atau ledger demo sudah dipakai data non-demo, seeder membatalkan proses untuk melindungi konsistensi stok dan riwayat.
 
 ## Akun dan Role
 
@@ -287,10 +288,20 @@ Seeder default menyediakan akun **khusus local/demo** berikut:
 
 | Nama | Email | Password awal | Role |
 |---|---|---|---|
-| Fikri | `fikri@tambak.local` | `password` | Admin |
-| Abel | `abel@tambak.local` | `password` | Manager |
+| Abel | `abel@tambak.local` | `password` | Admin |
+| Admin 01 | `admin01@tambak.local` | `password` | Admin |
+| Admin 02 | `admin02@tambak.local` | `password` | Admin |
+| Admin 03 | `admin03@tambak.local` | `password` | Admin |
+| Admin 04 | `admin04@tambak.local` | `password` | Admin |
+| Admin 05 | `admin05@tambak.local` | `password` | Admin |
+| Admin 06 | `admin06@tambak.local` | `password` | Admin |
+| Admin 07 | `admin07@tambak.local` | `password` | Admin |
+| Admin 08 | `admin08@tambak.local` | `password` | Admin |
+| Admin 09 | `admin09@tambak.local` | `password` | Admin |
 
-Kedua akun dapat menggunakan Remember Me dan mengubah password sendiri melalui menu akun di kanan Navbar. Perubahan password memverifikasi password saat ini, mempertahankan session aktif, menghapus session database lain milik akun tersebut, serta membatalkan kredensial Remember Me lama.
+Kesepuluh akun dapat menggunakan Remember Me dan mengubah password sendiri melalui menu akun di kanan Navbar. Perubahan password memverifikasi password saat ini, mempertahankan session aktif, menghapus session database lain milik akun tersebut, serta membatalkan kredensial Remember Me lama.
+
+Role Manager tetap tersedia untuk kompatibilitas dan kebutuhan akun non-demo, dengan akses baca master serta pengelolaan transaksi. Seeder tidak menyediakan akun demo Manager dan `vendor@tambak.local` bukan lagi akun aktif.
 
 > Jangan gunakan email atau password demo sebagai kredensial production. Deployment production harus membuat dan mengelola kredensialnya sendiri serta tidak menjalankan demo seeder tanpa keputusan eksplisit.
 
@@ -300,7 +311,7 @@ Urutan menu berikut sesuai dengan Sidebar saat ini.
 
 ### Dashboard
 
-Menampilkan KPI utama, posisi stok terkini, grafik berdasarkan Tambak dan komoditas, tren pembibitan/kematian/biaya pakan, aktivitas transaksi, serta AuditLog terbaru. Filter periode hanya memengaruhi data historis dan aktivitas; stok saat ini tetap memakai posisi `pond_stocks` terkini.
+Menampilkan KPI utama, posisi stok terkini, grafik berdasarkan Tambak dan komoditas, tren pembibitan/kematian/biaya pakan, aktivitas transaksi, aktivitas akun Admin, serta AuditLog terbaru. Grafik **Aktivitas Akun Admin** menghitung AuditLog aktual untuk setiap Admin pada periode terpilih, termasuk nilai nol; grafik ini tidak mengikuti filter Tambak karena AuditLog tidak memiliki relasi lokasi yang seragam. Filter periode hanya memengaruhi data historis dan aktivitas; stok saat ini tetap memakai posisi `pond_stocks` terkini.
 
 ### Tambak
 
@@ -346,22 +357,23 @@ Menyediakan delapan laporan: Stok Saat Ini, Pembibitan, Pemindahan Stok, Perubah
 
 ### Admin
 
-Admin bertanggung jawab menjaga data operasional tetap lengkap dan konsisten:
+Admin bertanggung jawab atas master data dan transaksi operasional aplikasi:
 
-- Membuat, melihat, mengubah, mengaktifkan, atau menonaktifkan master data.
-- Membuat, melihat, mengubah, dan menghapus transaksi selama aturan dependensi mengizinkan.
+- Membuat, melihat, mengubah, mengaktifkan, atau menonaktifkan master Tambak, Komoditas, Vendor, dan Pakan/Nutrisi/Obat.
+- Membuat, melihat, mengubah, dan menghapus Pembibitan, Pemindahan Stok, Perubahan Jumlah, dan Pemberian Pakan selama aturan keselamatan bisnis mengizinkan.
 - Memeriksa Dashboard, Riwayat Transaksi, AuditLog yang ditampilkan, dan Laporan.
 - Melakukan export, Print, dan PDF untuk kebutuhan operasional.
-- Memastikan pilihan lokasi, Batch, nilai stok, biaya, dan tanggal transaksi benar.
+- Menjaga kelengkapan master, ketepatan transaksi, serta konsistensi stok dan riwayat operasional.
 
 ### Manager
 
-Manager berfokus pada pemantauan dan evaluasi:
+Role Manager tetap mendukung transaksi operasional, tetapi tidak memiliki akun demo bawaan:
 
-- Melihat Dashboard serta detail master dan transaksi.
+- Melihat Dashboard serta daftar/detail master tanpa mengubahnya.
+- Membuat, melihat, mengubah, dan menghapus Pembibitan, Pemindahan Stok, Perubahan Jumlah, dan Pemberian Pakan sesuai aturan keselamatan stok.
 - Menelusuri Riwayat Transaksi.
 - Melihat, memfilter, mengekspor, mencetak, dan mengunduh laporan.
-- Tidak membuat atau mengubah master maupun transaksi.
+- Tidak membuat, mengubah, mengaktifkan, atau menonaktifkan master data.
 - Dapat mengubah password akun sendiri.
 
 ## Matriks Otorisasi
@@ -369,11 +381,14 @@ Manager berfokus pada pemantauan dan evaluasi:
 | Kemampuan | Admin | Manager |
 |---|:---:|:---:|
 | Membuka Dashboard | Ya | Ya |
-| Melihat daftar/detail master | Ya | Ya |
-| Membuat/mengubah/status master | Ya | Tidak |
-| Melihat daftar/detail transaksi | Ya | Ya |
-| Membuat transaksi | Ya | Tidak |
-| Mengubah/menghapus transaksi | Ya | Tidak |
+| Master Tambak | Kelola | Lihat |
+| Master Komoditas | Kelola | Lihat |
+| Master Vendor | Kelola | Lihat |
+| Master Pakan/Nutrisi/Obat | Kelola | Lihat |
+| Pembibitan | Kelola | Kelola |
+| Pemindahan Stok | Kelola | Kelola |
+| Perubahan Jumlah | Kelola | Kelola |
+| Pemberian Pakan | Kelola | Kelola |
 | Melihat Riwayat Transaksi | Ya | Ya |
 | Melihat dan memfilter Laporan | Ya | Ya |
 | Export CSV/XLSX | Ya | Ya |

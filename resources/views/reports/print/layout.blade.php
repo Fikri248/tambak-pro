@@ -7,22 +7,27 @@
     <style>
         @page {
             size: A4 landscape;
-            margin: 10mm;
+            margin: 10mm 12mm;
         }
 
-        * {
+        *,
+        *::before,
+        *::after {
             box-sizing: border-box;
         }
 
         html,
         body {
-            margin: 0;
             padding: 0;
             background: #e5e5e5;
             color: #171717;
             font-family: Arial, Helvetica, sans-serif;
             font-size: 9pt;
             line-height: 1.4;
+        }
+
+        body {
+            margin: 0;
         }
 
         .screen-actions {
@@ -101,6 +106,7 @@
         .summary-table,
         .report-table {
             width: 100%;
+            max-width: 100%;
             border-collapse: collapse;
         }
 
@@ -161,17 +167,23 @@
         }
 
         .report-table {
-            table-layout: auto;
-            font-size: 7.2pt;
+            table-layout: fixed;
+            font-size: 7pt;
+            line-height: 1.25;
         }
 
         .report-scroll {
             width: 100%;
+            max-width: 100%;
             overflow-x: auto;
         }
 
         .report-table thead {
             display: table-header-group;
+        }
+
+        .report-table tfoot {
+            display: table-footer-group;
         }
 
         .report-table tr {
@@ -181,18 +193,49 @@
 
         .report-table th,
         .report-table td {
+            box-sizing: border-box;
             border: 1px solid #bdbdbd;
-            padding: 4px 4px;
+            padding: 3px 4px;
             vertical-align: top;
+            white-space: normal;
             overflow-wrap: anywhere;
             word-wrap: break-word;
+            word-break: break-word;
         }
 
         .report-table th {
             background: #eeeeee;
-            font-size: 6.8pt;
+            font-size: 6.6pt;
             font-weight: 700;
             text-align: left;
+        }
+
+        .report-table--feeding {
+            font-size: 6.6pt;
+        }
+
+        .report-table--stock {
+            font-size: 6.2pt;
+            line-height: 1.15;
+        }
+
+        .report-table--stock th,
+        .report-table--stock td {
+            padding: 2px 3px;
+        }
+
+        .report-table--stock th {
+            font-size: 5.9pt;
+        }
+
+        .report-table--feeding th,
+        .report-table--feeding td {
+            padding-right: 3px;
+            padding-left: 3px;
+        }
+
+        .report-table--feeding th {
+            font-size: 6.2pt;
         }
 
         .align-right {
@@ -249,7 +292,14 @@
         @media print {
             html,
             body {
+                width: auto;
+                max-width: none;
+                padding: 0;
                 background: #fff;
+            }
+
+            body {
+                margin: 0;
             }
 
             .screen-actions {
@@ -257,7 +307,7 @@
             }
 
             .document {
-                width: 100%;
+                width: auto;
                 max-width: none;
                 min-height: 0;
                 margin: 0;
@@ -265,10 +315,14 @@
             }
 
             .report-scroll {
+                width: 100%;
+                max-width: 100%;
                 overflow: visible;
             }
 
             .report-table {
+                width: 100%;
+                max-width: 100%;
                 min-width: 0;
             }
         }

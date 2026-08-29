@@ -7,14 +7,12 @@ use App\Models\FeedingTransaction;
 use App\Models\StockAdjustment;
 use App\Models\StockingTransaction;
 use App\Models\StockMovement;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class AuditLogSeeder extends Seeder
 {
     public function run(): void
     {
-        $fikri = User::where('email', 'fikri@tambak.local')->firstOrFail();
         $stocking = StockingTransaction::where('transaction_number', 'STK-20260801-001')->firstOrFail();
         $mortality = StockAdjustment::where('transaction_number', 'ADJ-20260802-001')->firstOrFail();
         $feeding = FeedingTransaction::where('transaction_number', 'FED-20260803-001')->firstOrFail();
@@ -23,6 +21,7 @@ class AuditLogSeeder extends Seeder
         $logs = [
             [
                 'module' => 'STOCKING_TRANSACTION',
+                'user_id' => $stocking->created_by,
                 'transaction_number' => $stocking->transaction_number,
                 'record_id' => $stocking->id,
                 'description' => 'Pembibitan 1.000 ekor BT-001 ke Petak A1.',
@@ -31,6 +30,7 @@ class AuditLogSeeder extends Seeder
             ],
             [
                 'module' => 'STOCK_ADJUSTMENT',
+                'user_id' => $mortality->created_by,
                 'transaction_number' => $mortality->transaction_number,
                 'record_id' => $mortality->id,
                 'description' => 'Mortalitas 100 ekor BT-001 di Petak A1.',
@@ -39,6 +39,7 @@ class AuditLogSeeder extends Seeder
             ],
             [
                 'module' => 'FEEDING_TRANSACTION',
+                'user_id' => $feeding->created_by,
                 'transaction_number' => $feeding->transaction_number,
                 'record_id' => $feeding->id,
                 'description' => 'Pemberian 5 kg Pakan Starter A untuk BT-001 di Petak A1.',
@@ -52,6 +53,7 @@ class AuditLogSeeder extends Seeder
             ],
             [
                 'module' => 'STOCK_MOVEMENT',
+                'user_id' => $movement->created_by,
                 'transaction_number' => $movement->transaction_number,
                 'record_id' => $movement->id,
                 'description' => 'Pemindahan stok 500 ekor BT-001 dari Petak A1 ke Petak B1',
@@ -61,20 +63,19 @@ class AuditLogSeeder extends Seeder
         ];
 
         foreach ($logs as $log) {
-            AuditLog::updateOrCreate(
-                [
-                    'module' => $log['module'],
-                    'transaction_number' => $log['transaction_number'],
-                ],
-                [
-                    'user_id' => $fikri->id,
-                    'action' => 'CREATE',
-                    'record_id' => $log['record_id'],
-                    'description' => $log['description'],
-                    'old_values' => $log['old_values'],
-                    'new_values' => $log['new_values'],
-                ],
-            );
+            $auditLog = AuditLog::firstOrNew([
+                'module' => $log['module'],
+                'transaction_number' => $log['transaction_number'],
+            ]);
+            $auditLog->fill([
+                'action' => 'CREATE',
+                'record_id' => $log['record_id'],
+                'description' => $log['description'],
+                'old_values' => $log['old_values'],
+                'new_values' => $log['new_values'],
+            ]);
+            $auditLog->user_id ??= $log['user_id'];
+            $auditLog->save();
         }
     }
 }

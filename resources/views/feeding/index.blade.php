@@ -55,7 +55,7 @@
         </x-card>
 
         <div>
-            <x-table-wrapper title="Riwayat Pemberian" description="Penggunaan dan biaya dapat diperbarui oleh Admin; transaksi ini tidak mengubah stok bibit.">
+            <x-table-wrapper title="Riwayat Pemberian" description="Penggunaan dan biaya dapat diperbarui oleh Admin dan Manager; transaksi ini tidak mengubah stok bibit.">
                 @if ($transactions->isEmpty())
                     <x-empty-state title="Belum ada pemberian pakan" description="Catat penggunaan pakan, nutrisi, obat, atau kebutuhan lainnya." icon="feed">
                         @if (auth()->user()->canAccess('feeding.create'))

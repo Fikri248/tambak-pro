@@ -9,7 +9,6 @@ use App\Models\FeedingTransaction;
 use App\Models\FeedItem;
 use App\Models\Location;
 use App\Models\PondStock;
-use App\Models\Role;
 use App\Models\StockAdjustment;
 use App\Models\StockingTransaction;
 use App\Models\StockMovement;
@@ -20,7 +19,6 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use LogicException;
 
 class LargeDemoSeeder extends Seeder
@@ -45,8 +43,8 @@ class LargeDemoSeeder extends Seeder
 
         DB::transaction(function (): void {
             $this->callSilent(RoleSeeder::class);
-            $this->ensureCanonicalDemoUsers();
-            $actorId = (int) User::query()->where('email', 'fikri@tambak.local')->valueOrFail('id');
+            $this->callSilent(UserSeeder::class);
+            $actorIds = $this->canonicalAdminActorIds();
             $locations = $this->seedLocations();
             $vendors = $this->seedVendors();
             $commodities = $this->seedCommodities();
@@ -54,7 +52,7 @@ class LargeDemoSeeder extends Seeder
             $batches = $this->seedBatches($commodities, $vendors);
 
             $this->seedOperations(
-                actorId: $actorId,
+                actorIds: $actorIds,
                 locations: $locations,
                 commodities: $commodities,
                 feedItems: $feedItems,
@@ -63,27 +61,24 @@ class LargeDemoSeeder extends Seeder
         }, 3);
     }
 
-    private function ensureCanonicalDemoUsers(): void
+    /** @return list<int> */
+    private function canonicalAdminActorIds(): array
     {
-        $roles = Role::query()
-            ->whereIn('name', ['Admin', 'Manager'])
-            ->pluck('id', 'name');
-        $password = Hash::make('password');
+        $admins = User::query()
+            ->with('role:id,name')
+            ->whereIn('email', array_column(UserSeeder::DEMO_ADMINS, 'email'))
+            ->get()
+            ->keyBy('email');
 
-        foreach ([
-            ['email' => 'fikri@tambak.local', 'name' => 'Fikri', 'role' => 'Admin'],
-            ['email' => 'abel@tambak.local', 'name' => 'Abel', 'role' => 'Manager'],
-        ] as $identity) {
-            User::query()->firstOrCreate(
-                ['email' => $identity['email']],
-                [
-                    'role_id' => (int) $roles->get($identity['role']),
-                    'name' => $identity['name'],
-                    'password' => $password,
-                    'status' => 'ACTIVE',
-                ],
-            );
-        }
+        return array_map(function (array $identity) use ($admins): int {
+            $admin = $admins->get($identity['email']);
+
+            if (! $admin || $admin->role?->name !== 'Admin') {
+                throw new LogicException("Actor demo {$identity['email']} tidak tersedia sebagai Admin.");
+            }
+
+            return (int) $admin->id;
+        }, UserSeeder::DEMO_ADMINS);
     }
 
     /**
@@ -412,13 +407,14 @@ class LargeDemoSeeder extends Seeder
     }
 
     /**
+     * @param  list<int>  $actorIds
      * @param  array{petak_ids: list<int>, petak_names: array<int, string>}  $locations
      * @param  array{ids: array<string, int>, names: array<string, string>, units: array<string, string>}  $commodities
      * @param  array{ids: array<string, int>, names: array<string, string>, units: array<string, string>, prices: array<string, string>, vendorIds: array<string, int>}  $feedItems
      * @param  array{ids: array<string, int>, quantities: array<string, string>, unitCosts: array<string, string>, totalCosts: array<string, string>}  $batches
      */
     private function seedOperations(
-        int $actorId,
+        array $actorIds,
         array $locations,
         array $commodities,
         array $feedItems,
@@ -434,6 +430,7 @@ class LargeDemoSeeder extends Seeder
         $auditRows = [];
 
         for ($index = 1; $index <= self::RECORD_COUNT; $index++) {
+            $actorId = $actorIds[($index - 1) % count($actorIds)];
             $batchCode = sprintf('LDM-BT-%04d', $index);
             $commodityCode = sprintf('LDM-KMD-%04d', $index);
             $feedCode = sprintf('LDM-PKN-%04d', $index);
@@ -618,25 +615,25 @@ class LargeDemoSeeder extends Seeder
             StockingTransaction::class,
             $stockingRows,
             ['transaction_number'],
-            ['transaction_date', 'location_id', 'batch_id', 'quantity', 'total_cost', 'unit_cost', 'created_by', 'notes', 'created_at'],
+            ['transaction_date', 'location_id', 'batch_id', 'quantity', 'total_cost', 'unit_cost', 'notes', 'created_at'],
         );
         $this->upsertInChunks(
             StockMovement::class,
             $movementRows,
             ['transaction_number'],
-            ['transaction_date', 'batch_id', 'from_location_id', 'to_location_id', 'quantity', 'created_by', 'notes', 'created_at'],
+            ['transaction_date', 'batch_id', 'from_location_id', 'to_location_id', 'quantity', 'notes', 'created_at'],
         );
         $this->upsertInChunks(
             StockAdjustment::class,
             $adjustmentRows,
             ['transaction_number'],
-            ['transaction_date', 'location_id', 'batch_id', 'adjustment_type', 'quantity_change', 'quantity_before', 'quantity_after', 'reason', 'created_by', 'created_at'],
+            ['transaction_date', 'location_id', 'batch_id', 'adjustment_type', 'quantity_change', 'quantity_before', 'quantity_after', 'reason', 'created_at'],
         );
         $this->upsertInChunks(
             FeedingTransaction::class,
             $feedingRows,
             ['transaction_number'],
-            ['transaction_date', 'location_id', 'batch_id', 'feed_item_id', 'vendor_id', 'stock_quantity_snapshot', 'feed_quantity', 'unit_cost', 'total_cost', 'created_by', 'notes', 'created_at'],
+            ['transaction_date', 'location_id', 'batch_id', 'feed_item_id', 'vendor_id', 'stock_quantity_snapshot', 'feed_quantity', 'unit_cost', 'total_cost', 'notes', 'created_at'],
         );
         $this->upsertInChunks(
             PondStock::class,
@@ -851,7 +848,7 @@ class LargeDemoSeeder extends Seeder
             DB::table('audit_logs')->upsert(
                 $chunk,
                 ['id'],
-                ['user_id', 'action', 'module', 'record_id', 'transaction_number', 'description', 'old_values', 'new_values', 'created_at'],
+                ['action', 'module', 'record_id', 'transaction_number', 'description', 'old_values', 'new_values', 'created_at'],
             );
         }
     }

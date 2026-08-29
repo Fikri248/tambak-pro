@@ -31,6 +31,10 @@ const formatValue = (value, format, unit = null) => {
         return `${numberFormatter.format(value)} transaksi`;
     }
 
+    if (format === 'activity') {
+        return `${numberFormatter.format(value)} aktivitas`;
+    }
+
     return `${numberFormatter.format(value)} ${unit || 'ekor'}`;
 };
 
@@ -204,7 +208,7 @@ export const initializeDashboardCharts = () => {
 
         const config = key === 'transactionActivity'
             ? activityConfig(data)
-            : (['stockByTambak', 'stockByCommodity'].includes(key)
+            : (['stockByTambak', 'stockByCommodity', 'adminActivity'].includes(key)
                 ? categoryConfig(data)
                 : lineConfig(data, key));
 

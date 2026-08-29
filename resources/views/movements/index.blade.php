@@ -55,7 +55,7 @@
         </x-card>
 
         <div>
-            <x-table-wrapper title="Riwayat Pemindahan Stok" description="Admin dapat memperbarui atau membatalkan pemindahan yang masih aman terhadap riwayat stok.">
+            <x-table-wrapper title="Riwayat Pemindahan Stok" description="Admin dan Manager dapat memperbarui atau membatalkan pemindahan yang masih aman terhadap riwayat stok.">
                 @if ($movements->isEmpty())
                     <x-empty-state title="Belum ada Pemindahan Stok" description="Pindahkan stok Batch dari satu petak aktif ke petak aktif lainnya." icon="transfer">
                         @if (auth()->user()->canAccess('movements.create'))

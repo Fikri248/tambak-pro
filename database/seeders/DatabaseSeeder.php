@@ -29,5 +29,9 @@ class DatabaseSeeder extends Seeder
             PondStockSeeder::class,
             AuditLogSeeder::class,
         ]);
+
+        if (app()->environment(['local', 'testing'])) {
+            $this->call(LargeDemoSeeder::class);
+        }
     }
 }

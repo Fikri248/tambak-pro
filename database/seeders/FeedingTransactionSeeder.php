@@ -14,7 +14,7 @@ class FeedingTransactionSeeder extends Seeder
 {
     public function run(): void
     {
-        $fikri = User::where('email', 'fikri@tambak.local')->firstOrFail();
+        $abelAdmin = User::where('email', 'abel@tambak.local')->firstOrFail();
         $vendor = Vendor::where('name', 'PT Pakan Aqua Sejahtera')->firstOrFail();
 
         $transactions = [
@@ -73,22 +73,23 @@ class FeedingTransactionSeeder extends Seeder
             $batch = CommodityBatch::where('batch_code', $transaction['batch_code'])->firstOrFail();
             $feedItem = FeedItem::where('code', $transaction['feed_code'])->firstOrFail();
 
-            FeedingTransaction::updateOrCreate(
-                ['transaction_number' => $transaction['transaction_number']],
-                [
-                    'transaction_date' => $transaction['transaction_date'],
-                    'location_id' => $location->id,
-                    'batch_id' => $batch->id,
-                    'feed_item_id' => $feedItem->id,
-                    'vendor_id' => $vendor->id,
-                    'stock_quantity_snapshot' => $transaction['stock_snapshot'],
-                    'feed_quantity' => $transaction['feed_quantity'],
-                    'unit_cost' => $transaction['unit_cost'],
-                    'total_cost' => $transaction['total_cost'],
-                    'created_by' => $fikri->id,
-                    'notes' => $transaction['notes'],
-                ],
-            );
+            $record = FeedingTransaction::firstOrNew([
+                'transaction_number' => $transaction['transaction_number'],
+            ]);
+            $record->fill([
+                'transaction_date' => $transaction['transaction_date'],
+                'location_id' => $location->id,
+                'batch_id' => $batch->id,
+                'feed_item_id' => $feedItem->id,
+                'vendor_id' => $vendor->id,
+                'stock_quantity_snapshot' => $transaction['stock_snapshot'],
+                'feed_quantity' => $transaction['feed_quantity'],
+                'unit_cost' => $transaction['unit_cost'],
+                'total_cost' => $transaction['total_cost'],
+                'notes' => $transaction['notes'],
+            ]);
+            $record->created_by ??= $abelAdmin->id;
+            $record->save();
         }
     }
 }

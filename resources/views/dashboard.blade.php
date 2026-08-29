@@ -138,6 +138,19 @@
                     'emptyDescription' => 'Tidak ada transaksi operasional yang sesuai dengan filter.',
                     'cardClass' => 'xl:col-span-2',
                 ])
+
+                @include('dashboard.partials.chart-card', [
+                    'title' => 'Aktivitas Akun Admin',
+                    'description' => 'Jumlah aktivitas AuditLog per Admin pada periode terpilih. Grafik ini tidak dipengaruhi filter Tambak karena AuditLog tidak menyimpan relasi lokasi yang seragam.',
+                    'chart' => $charts['adminActivity'],
+                    'chartKey' => 'adminActivity',
+                    'reportUrl' => route('history.index', $dateFilters),
+                    'reportLabel' => 'Lihat riwayat',
+                    'emptyTitle' => 'Belum ada aktivitas Admin',
+                    'emptyDescription' => 'Seluruh akun Admin memiliki 0 aktivitas AuditLog pada periode ini.',
+                    'cardClass' => 'xl:col-span-2',
+                    'chartHeightClass' => 'h-[30rem] px-3 py-4 sm:h-[32rem] sm:px-5',
+                ])
             </div>
         </section>
 
@@ -183,7 +196,7 @@
             <div class="flex items-start justify-between gap-4 border-b border-neutral-200 px-5 py-4 sm:px-6">
                 <div>
                     <h2 class="text-base font-semibold text-neutral-950">Aktivitas Terbaru</h2>
-                    <p class="mt-1 text-xs text-neutral-500">Peristiwa audit terbaru; tidak digunakan sebagai sumber perhitungan grafik.</p>
+                    <p class="mt-1 text-xs text-neutral-500">Peristiwa AuditLog terbaru dari aktivitas aplikasi.</p>
                 </div>
                 <a href="{{ route('history.index') }}" class="shrink-0 text-xs font-medium text-neutral-600 hover:text-neutral-950 hover:underline">Lihat riwayat</a>
             </div>

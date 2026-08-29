@@ -12,7 +12,7 @@ class StockingTransactionSeeder extends Seeder
 {
     public function run(): void
     {
-        $fikri = User::where('email', 'fikri@tambak.local')->firstOrFail();
+        $abelAdmin = User::where('email', 'abel@tambak.local')->firstOrFail();
 
         $transactions = [
             [
@@ -51,19 +51,20 @@ class StockingTransactionSeeder extends Seeder
             $location = Location::where('code', $transaction['location_code'])->firstOrFail();
             $batch = CommodityBatch::where('batch_code', $transaction['batch_code'])->firstOrFail();
 
-            StockingTransaction::updateOrCreate(
-                ['transaction_number' => $transaction['transaction_number']],
-                [
-                    'transaction_date' => $transaction['transaction_date'],
-                    'location_id' => $location->id,
-                    'batch_id' => $batch->id,
-                    'quantity' => $transaction['quantity'],
-                    'total_cost' => $transaction['total_cost'],
-                    'unit_cost' => $transaction['unit_cost'],
-                    'created_by' => $fikri->id,
-                    'notes' => $transaction['notes'],
-                ],
-            );
+            $record = StockingTransaction::firstOrNew([
+                'transaction_number' => $transaction['transaction_number'],
+            ]);
+            $record->fill([
+                'transaction_date' => $transaction['transaction_date'],
+                'location_id' => $location->id,
+                'batch_id' => $batch->id,
+                'quantity' => $transaction['quantity'],
+                'total_cost' => $transaction['total_cost'],
+                'unit_cost' => $transaction['unit_cost'],
+                'notes' => $transaction['notes'],
+            ]);
+            $record->created_by ??= $abelAdmin->id;
+            $record->save();
         }
     }
 }

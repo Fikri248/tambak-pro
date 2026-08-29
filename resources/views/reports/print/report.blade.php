@@ -1,3 +1,18 @@
+@php
+    $reportColumnWidths = [
+        'stock' => [10, 10, 9, 13, 13, 10, 11, 12, 12],
+        'stocking' => [11, 9, 8, 8, 12, 12, 9, 10, 11, 10],
+        'movements' => [13, 12, 11, 14, 14, 14, 11, 11],
+        'adjustments' => [10, 9, 8, 8, 8, 10, 8, 8, 8, 13, 10],
+        'feeding' => [9, 8, 7, 8, 12, 7, 10, 7, 8, 8, 9, 7],
+        'vendors' => [12, 20, 12, 10, 10, 13, 10, 13],
+        'commodities' => [9, 15, 9, 7, 8, 8, 9, 9, 8, 8, 10],
+        'locations' => [9, 12, 12, 7, 7, 7, 10, 10, 8, 10, 8],
+    ];
+    $mainColumnWidths = $reportColumnWidths[$reportKey] ?? [];
+    $secondaryColumnWidths = $reportKey === 'feeding' ? [24, 12, 10, 14, 18, 22] : [];
+@endphp
+
 <header>
     <p class="identity">TAMBAK PRO · LAPORAN OPERASIONAL</p>
     <h1>{{ $title }}</h1>
@@ -47,7 +62,14 @@
         <h2 id="secondary-title" class="section-title">{{ $secondary['title'] }}</h2>
         <p class="table-description">{{ $secondary['description'] }}</p>
         <div class="report-scroll">
-            <table class="report-table">
+            <table class="report-table report-table--{{ $reportKey }} report-table--secondary">
+                @if (count($secondaryColumnWidths) === count($secondary['columns']))
+                    <colgroup>
+                        @foreach ($secondaryColumnWidths as $width)
+                            <col style="width: {{ $width }}%;">
+                        @endforeach
+                    </colgroup>
+                @endif
                 <thead>
                     <tr>
                         @foreach ($secondary['columns'] as $column)
@@ -71,7 +93,14 @@
         <div class="empty-state">Tidak ada data yang sesuai dengan filter.</div>
     @else
         <div class="report-scroll">
-            <table class="report-table">
+            <table class="report-table report-table--{{ $reportKey }}">
+                @if (count($mainColumnWidths) === count($columns))
+                    <colgroup>
+                        @foreach ($mainColumnWidths as $width)
+                            <col style="width: {{ $width }}%;">
+                        @endforeach
+                    </colgroup>
+                @endif
                 <thead>
                     <tr>
                         @foreach ($columns as $column)

@@ -51,7 +51,7 @@ class UserFactory extends Factory
 
     public function admin(): static
     {
-        return $this->withRole('Admin', 'Administrator sistem dengan akses penuh.');
+        return $this->withRole('Admin', 'Administrator master data, transaksi operasional, dan pelaporan tambak.');
     }
 
     public function manager(): static

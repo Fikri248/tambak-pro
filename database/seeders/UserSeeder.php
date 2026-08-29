@@ -8,14 +8,29 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use LogicException;
 
 class UserSeeder extends Seeder
 {
     /**
-     * Historical ownership columns that reference the exact legacy demo users.
+     * Canonical local/demo Admin identities in stable actor-pool order.
      *
-     * @var array<string, string>
+     * @var list<array{name: string, email: string}>
      */
+    public const DEMO_ADMINS = [
+        ['name' => 'Abel', 'email' => 'abel@tambak.local'],
+        ['name' => 'Admin 01', 'email' => 'admin01@tambak.local'],
+        ['name' => 'Admin 02', 'email' => 'admin02@tambak.local'],
+        ['name' => 'Admin 03', 'email' => 'admin03@tambak.local'],
+        ['name' => 'Admin 04', 'email' => 'admin04@tambak.local'],
+        ['name' => 'Admin 05', 'email' => 'admin05@tambak.local'],
+        ['name' => 'Admin 06', 'email' => 'admin06@tambak.local'],
+        ['name' => 'Admin 07', 'email' => 'admin07@tambak.local'],
+        ['name' => 'Admin 08', 'email' => 'admin08@tambak.local'],
+        ['name' => 'Admin 09', 'email' => 'admin09@tambak.local'],
+    ];
+
+    /** @var array<string, string> */
     private const USER_REFERENCES = [
         'stocking_transactions' => 'created_by',
         'stock_movements' => 'created_by',
@@ -28,98 +43,144 @@ class UserSeeder extends Seeder
     {
         DB::transaction(function (): void {
             $adminRole = Role::query()->where('name', 'Admin')->firstOrFail();
-            $managerRole = Role::query()->where('name', 'Manager')->firstOrFail();
+            $abel = $this->ensureAbel($adminRole);
 
-            $fikri = $this->transitionDemoIdentity(
-                legacyEmail: 'budi@tambak.local',
-                targetEmail: 'fikri@tambak.local',
-                targetName: 'Fikri',
-                targetRole: $adminRole,
+            $this->retireVendorManager($abel);
+            $this->retireLegacyIdentities(
+                replacement: $abel,
+                emails: ['admin@tambak.local', 'budi@tambak.local', 'fikri@tambak.local', 'andi@tambak.local'],
             );
+            $this->retireLegacyOperationalRole($abel);
 
-            $this->transitionDemoIdentity(
-                legacyEmail: 'andi@tambak.local',
-                targetEmail: 'abel@tambak.local',
-                targetName: 'Abel',
-                targetRole: $managerRole,
-            );
-
-            $this->removeLegacyAdministrator($fikri);
-            $this->retireLegacyOperationalRole($fikri);
+            foreach (array_slice(self::DEMO_ADMINS, 1) as $identity) {
+                $this->ensureCanonicalAdmin($identity, $adminRole);
+            }
         });
     }
 
-    private function transitionDemoIdentity(
-        string $legacyEmail,
-        string $targetEmail,
-        string $targetName,
-        Role $targetRole,
-    ): User {
-        $target = User::query()->where('email', $targetEmail)->lockForUpdate()->first();
-        $legacy = User::query()->where('email', $legacyEmail)->lockForUpdate()->first();
+    private function ensureAbel(Role $adminRole): User
+    {
+        $abel = User::query()->whereKey(2)->lockForUpdate()->first();
 
-        if (! $target && $legacy) {
-            $roleChanged = $legacy->role_id !== $targetRole->id;
+        if (! $abel) {
+            $emailOwner = User::query()->where('email', self::DEMO_ADMINS[0]['email'])->lockForUpdate()->first();
 
-            $legacy->forceFill([
-                'email' => $targetEmail,
-                'name' => $targetName,
-                'role_id' => $targetRole->id,
-                ...($roleChanged ? ['remember_token' => null] : []),
-            ])->save();
-
-            if ($roleChanged) {
-                $this->deleteSessionsFor($legacy);
+            if ($emailOwner) {
+                throw new LogicException(
+                    "Tidak dapat membuat Abel dengan ID 2: email abel@tambak.local dimiliki oleh ID {$emailOwner->id}.",
+                );
             }
 
-            return $legacy;
-        }
-
-        if (! $target) {
-            return User::query()->create([
-                'email' => $targetEmail,
-                'name' => $targetName,
-                'role_id' => $targetRole->id,
+            return User::query()->forceCreate([
+                'id' => 2,
+                'role_id' => $adminRole->id,
+                'name' => self::DEMO_ADMINS[0]['name'],
+                'email' => self::DEMO_ADMINS[0]['email'],
                 'password' => Hash::make('password'),
                 'status' => 'ACTIVE',
             ]);
         }
 
-        $roleChanged = $target->role_id !== $targetRole->id;
-
-        $target->forceFill([
-            'name' => $targetName,
-            'role_id' => $targetRole->id,
-            ...($roleChanged ? ['remember_token' => null] : []),
-        ])->save();
-
-        if ($roleChanged) {
-            $this->deleteSessionsFor($target);
+        if (! in_array($abel->email, ['abel@tambak.local', 'fikri@tambak.local', 'budi@tambak.local'], true)) {
+            throw new LogicException(
+                'Pengguna ID 2 bukan identitas demo yang dikenali; transisi dibatalkan untuk melindungi data.',
+            );
         }
 
-        if ($legacy && $legacy->isNot($target)) {
-            $this->reassignHistoricalReferences($legacy, $target);
-            $this->deleteSessionsFor($legacy);
-            $legacy->delete();
-        }
-
-        return $target;
-    }
-
-    private function removeLegacyAdministrator(User $replacement): void
-    {
-        $legacyAdministrator = User::query()
-            ->where('email', 'admin@tambak.local')
+        $emailOwner = User::query()
+            ->where('email', self::DEMO_ADMINS[0]['email'])
+            ->where('id', '!=', $abel->id)
             ->lockForUpdate()
             ->first();
 
-        if (! $legacyAdministrator || $legacyAdministrator->is($replacement)) {
+        if ($emailOwner) {
+            throw new LogicException(
+                "Email target abel@tambak.local masih dimiliki oleh ID {$emailOwner->id}; transisi dibatalkan.",
+            );
+        }
+
+        $identityChanged = $abel->name !== self::DEMO_ADMINS[0]['name']
+            || $abel->email !== self::DEMO_ADMINS[0]['email']
+            || $abel->role_id !== $adminRole->id;
+
+        $abel->forceFill([
+            'name' => self::DEMO_ADMINS[0]['name'],
+            'email' => self::DEMO_ADMINS[0]['email'],
+            'role_id' => $adminRole->id,
+            ...($identityChanged ? ['remember_token' => null] : []),
+        ])->save();
+
+        if ($identityChanged) {
+            $this->deleteSessionsFor($abel);
+        }
+
+        return $abel;
+    }
+
+    /** @param array{name: string, email: string} $identity */
+    private function ensureCanonicalAdmin(array $identity, Role $adminRole): User
+    {
+        $admin = User::query()->where('email', $identity['email'])->lockForUpdate()->first();
+
+        if (! $admin) {
+            return User::query()->create([
+                'role_id' => $adminRole->id,
+                'name' => $identity['name'],
+                'email' => $identity['email'],
+                'password' => Hash::make('password'),
+                'status' => 'ACTIVE',
+            ]);
+        }
+
+        $identityChanged = $admin->name !== $identity['name'] || $admin->role_id !== $adminRole->id;
+        $admin->forceFill([
+            'role_id' => $adminRole->id,
+            'name' => $identity['name'],
+            ...($identityChanged ? ['remember_token' => null] : []),
+        ])->save();
+
+        if ($identityChanged) {
+            $this->deleteSessionsFor($admin);
+        }
+
+        return $admin;
+    }
+
+    private function retireVendorManager(User $replacement): void
+    {
+        $vendor = User::query()->where('email', 'vendor@tambak.local')->lockForUpdate()->first();
+
+        if (! $vendor) {
             return;
         }
 
-        $this->reassignHistoricalReferences($legacyAdministrator, $replacement);
-        $this->deleteSessionsFor($legacyAdministrator);
-        $legacyAdministrator->delete();
+        if ($vendor->is($replacement)) {
+            throw new LogicException('Vendor Manager tidak boleh sama dengan akun pengganti Abel.');
+        }
+
+        $vendor->forceFill(['remember_token' => null])->save();
+        $this->reassignHistoricalReferences($vendor, $replacement);
+        $this->deleteSessionsFor($vendor);
+        DB::table('password_reset_tokens')->where('email', $vendor->email)->delete();
+        $vendor->delete();
+    }
+
+    /** @param list<string> $emails */
+    private function retireLegacyIdentities(User $replacement, array $emails): void
+    {
+        $legacyUsers = User::query()
+            ->whereIn('email', $emails)
+            ->where('id', '!=', $replacement->id)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($legacyUsers as $legacyUser) {
+            $this->reassignHistoricalReferences($legacyUser, $replacement);
+            $this->deleteSessionsFor($legacyUser);
+            DB::table('password_reset_tokens')->where('email', $legacyUser->email)->delete();
+            $legacyUser->delete();
+        }
     }
 
     private function retireLegacyOperationalRole(User $replacement): void
@@ -139,6 +200,7 @@ class UserSeeder extends Seeder
         foreach ($legacyUsers as $legacyUser) {
             $this->reassignHistoricalReferences($legacyUser, $replacement);
             $this->deleteSessionsFor($legacyUser);
+            DB::table('password_reset_tokens')->where('email', $legacyUser->email)->delete();
             $legacyUser->delete();
         }
 

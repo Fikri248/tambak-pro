@@ -54,7 +54,7 @@
         </x-card>
 
         <div>
-            <x-table-wrapper title="Riwayat Pembibitan" description="Transaksi dapat diperbarui atau dihapus oleh Admin selama belum memiliki aktivitas lanjutan.">
+            <x-table-wrapper title="Riwayat Pembibitan" description="Admin dan Manager dapat memperbarui atau menghapus transaksi selama belum memiliki aktivitas lanjutan.">
                 @if ($transactions->isEmpty())
                     <x-empty-state title="Belum ada transaksi pembibitan" description="Catat bibit baru yang pertama kali masuk ke petak budidaya." icon="seedling">
                         @if (auth()->user()->canAccess('stocking.create'))

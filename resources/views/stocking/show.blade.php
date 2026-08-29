@@ -87,6 +87,6 @@
             </x-card>
         </div>
 
-        <p class="text-xs leading-5 text-neutral-500">Admin dapat mengedit atau menghapus transaksi ini selama Batch belum digunakan pada aktivitas lanjutan. Setiap perubahan membatalkan dampak lama dan menghitung ulang stok di dalam transaksi database.</p>
+        <p class="text-xs leading-5 text-neutral-500">Admin dan Manager dapat mengedit atau menghapus transaksi ini selama Batch belum digunakan pada aktivitas lanjutan. Setiap perubahan membatalkan dampak lama dan menghitung ulang stok di dalam transaksi database.</p>
     </div>
 </x-layouts.app>

@@ -55,7 +55,7 @@
         </x-card>
 
         <div>
-            <x-table-wrapper title="Riwayat Perubahan Jumlah" description="Admin dapat memperbarui atau membatalkan perubahan yang belum memiliki aktivitas lanjutan.">
+            <x-table-wrapper title="Riwayat Perubahan Jumlah" description="Admin dan Manager dapat memperbarui atau membatalkan perubahan yang belum memiliki aktivitas lanjutan.">
                 @if ($adjustments->isEmpty())
                     <x-empty-state title="Belum ada perubahan jumlah" description="Catat kematian, kehilangan, atau penyesuaian stok agar riwayat tetap dapat ditelusuri." icon="adjustment">
                         @if (auth()->user()->canAccess('adjustments.create'))

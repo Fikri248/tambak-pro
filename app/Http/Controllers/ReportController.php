@@ -77,6 +77,7 @@ class ReportController extends Controller
         return Pdf::loadView('reports.print.layout', $data + ['isPdf' => true])
             ->setPaper('a4', 'landscape')
             ->setOptions([
+                'defaultMediaType' => 'print',
                 'isRemoteEnabled' => false,
                 'isPhpEnabled' => false,
                 'isJavascriptEnabled' => false,
@@ -150,6 +151,7 @@ class ReportController extends Controller
         $data = $this->reports->document($report, $filters);
 
         return $data + [
+            'reportKey' => $report,
             'backUrl' => route('reports.'.$report, array_filter(
                 $filters,
                 fn (mixed $value): bool => $value !== null && $value !== '',

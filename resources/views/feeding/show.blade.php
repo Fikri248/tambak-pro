@@ -101,6 +101,6 @@
             </x-card>
         </div>
 
-        <p class="text-xs leading-5 text-neutral-500">Admin dapat mengedit atau menghapus catatan pemberian ini. Transaksi hanya mencatat penggunaan dan biaya; jumlah stok bibit tidak berubah.</p>
+        <p class="text-xs leading-5 text-neutral-500">Admin dan Manager dapat mengedit atau menghapus catatan pemberian ini. Transaksi hanya mencatat penggunaan dan biaya; jumlah stok bibit tidak berubah.</p>
     </div>
 </x-layouts.app>

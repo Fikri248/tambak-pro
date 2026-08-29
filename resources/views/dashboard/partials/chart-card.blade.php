@@ -10,7 +10,7 @@
     </div>
 
     @if ($chart['hasData'])
-        <div class="h-64 px-3 py-4 sm:h-72 sm:px-5">
+        <div class="{{ $chartHeightClass ?? 'h-64 px-3 py-4 sm:h-72 sm:px-5' }}">
             <canvas data-dashboard-chart="{{ $chartKey }}" aria-hidden="true"></canvas>
         </div>
         <p class="sr-only">
@@ -18,6 +18,10 @@
             @if ($chartKey === 'transactionActivity')
                 @foreach ($chart['datasets'] as $dataset)
                     {{ $dataset['label'] }} {{ number_format(array_sum($dataset['values']), 0, ',', '.') }} transaksi.
+                @endforeach
+            @elseif ($chartKey === 'adminActivity')
+                @foreach ($chart['labels'] as $index => $label)
+                    {{ $label }} {{ number_format((int) ($chart['values'][$index] ?? 0), 0, ',', '.') }} aktivitas.
                 @endforeach
             @else
                 @foreach ($chart['labels'] as $index => $label)
