@@ -138,19 +138,6 @@
                     'emptyDescription' => 'Tidak ada transaksi operasional yang sesuai dengan filter.',
                     'cardClass' => 'xl:col-span-2',
                 ])
-
-                @include('dashboard.partials.chart-card', [
-                    'title' => 'Aktivitas Akun Admin',
-                    'description' => 'Jumlah aktivitas AuditLog per Admin pada periode terpilih. Grafik ini tidak dipengaruhi filter Tambak karena AuditLog tidak menyimpan relasi lokasi yang seragam.',
-                    'chart' => $charts['adminActivity'],
-                    'chartKey' => 'adminActivity',
-                    'reportUrl' => route('history.index', $dateFilters),
-                    'reportLabel' => 'Lihat riwayat',
-                    'emptyTitle' => 'Belum ada aktivitas Admin',
-                    'emptyDescription' => 'Seluruh akun Admin memiliki 0 aktivitas AuditLog pada periode ini.',
-                    'cardClass' => 'xl:col-span-2',
-                    'chartHeightClass' => 'h-[30rem] px-3 py-4 sm:h-[32rem] sm:px-5',
-                ])
             </div>
         </section>
 

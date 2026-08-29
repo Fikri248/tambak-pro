@@ -223,6 +223,7 @@ export const initializeCrudModal = () => {
         if (!(form instanceof HTMLFormElement)
             || !dialog.open
             || !body.contains(form)
+            || event.submitter?.matches('[data-coa-lookup-submit]')
             || form.dataset.confirm?.trim()) {
             return;
         }
@@ -240,9 +241,15 @@ export const initializeCrudModal = () => {
         clearValidationErrors();
 
         try {
+            const formData = new FormData(form);
+
+            if (submitter?.name) {
+                formData.set(submitter.name, submitter.value);
+            }
+
             const response = await fetch(appendModalParameter(form.action), {
                 method: form.method || 'POST',
-                body: new FormData(form),
+                body: formData,
                 credentials: 'same-origin',
                 headers: {
                     Accept: 'application/json',

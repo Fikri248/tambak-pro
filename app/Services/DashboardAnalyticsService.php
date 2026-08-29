@@ -62,39 +62,8 @@ class DashboardAnalyticsService
                 'mortalityTrend' => $this->singleSeries($buckets, $mortality, 'Kematian', 'quantity'),
                 'feedingCostTrend' => $this->singleSeries($buckets, $feedingCost, 'Biaya', 'currency'),
                 'transactionActivity' => $this->transactionActivity($buckets, $range, $tambakId),
-                'adminActivity' => $this->adminActivity($range),
             ],
             'petakSummary' => $this->petakSummary($range, $tambakId),
-        ];
-    }
-
-    /** @param array<string, mixed> $range */
-    private function adminActivity(array $range): array
-    {
-        $activity = DB::table('audit_logs')
-            ->whereBetween('created_at', [$range['start'], $range['end']])
-            ->select('user_id')
-            ->selectRaw('COUNT(*) as total')
-            ->groupBy('user_id');
-
-        $rows = DB::table('users')
-            ->join('roles', 'roles.id', '=', 'users.role_id')
-            ->leftJoinSub($activity, 'activity', 'activity.user_id', '=', 'users.id')
-            ->where('roles.name', 'Admin')
-            ->select(['users.id', 'users.name'])
-            ->selectRaw('COALESCE(activity.total, 0) as total')
-            ->orderByDesc('total')
-            ->orderBy('users.name')
-            ->orderBy('users.id')
-            ->get();
-        $values = $rows->pluck('total')->map(fn (mixed $value): int => (int) $value)->all();
-
-        return [
-            'labels' => $rows->pluck('name')->all(),
-            'values' => $values,
-            'datasets' => [['label' => 'Jumlah Aktivitas', 'values' => $values]],
-            'format' => 'activity',
-            'hasData' => collect($values)->contains(fn (int $value): bool => $value > 0),
         ];
     }
 

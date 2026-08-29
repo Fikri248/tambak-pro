@@ -208,7 +208,7 @@ export const initializeDashboardCharts = () => {
 
         const config = key === 'transactionActivity'
             ? activityConfig(data)
-            : (['stockByTambak', 'stockByCommodity', 'adminActivity'].includes(key)
+            : (['stockByTambak', 'stockByCommodity'].includes(key)
                 ? categoryConfig(data)
                 : lineConfig(data, key));
 

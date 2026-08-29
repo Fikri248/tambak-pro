@@ -1,6 +1,7 @@
 import './bootstrap';
 import { initializeAccountMenu } from './account-menu';
 import { initializeConfirmationDialog } from './confirmation-dialog';
+import { initializeChartOfAccountLookups } from './chart-of-account-lookups';
 import { initializeCrudModal } from './crud-modal';
 import { initializeDashboardCharts } from './dashboard-charts';
 import { initializeFilterControls } from './filter-controls';
@@ -646,6 +647,7 @@ const initializeFeedingForm = () => {
 };
 
 const initializeDynamicContent = () => {
+    initializeChartOfAccountLookups();
     initializePasswordVisibility();
     initializeStockingForm();
     initializeMovementForm();

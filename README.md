@@ -19,7 +19,7 @@ Kode bisnis seperti kode lokasi, Vendor, komoditas, kebutuhan pakan, dan Batch d
 
 - Autentikasi pengguna aktif, Remember Me, Logout aman, dan perubahan password mandiri.
 - Dua role: **Admin** dan **Manager**.
-- Dashboard KPI, grafik stok, tren aktivitas, aktivitas per akun Admin, dan aktivitas terbaru.
+- Dashboard KPI, grafik stok, tren aktivitas transaksi, dan aktivitas terbaru.
 - Pengelolaan master data dengan pencarian, filter, detail, dan status aktif/nonaktif.
 - Kontak WhatsApp pada nomor Vendor yang valid.
 - CRUD modal dengan fallback halaman penuh tanpa JavaScript.
@@ -311,7 +311,7 @@ Urutan menu berikut sesuai dengan Sidebar saat ini.
 
 ### Dashboard
 
-Menampilkan KPI utama, posisi stok terkini, grafik berdasarkan Tambak dan komoditas, tren pembibitan/kematian/biaya pakan, aktivitas transaksi, aktivitas akun Admin, serta AuditLog terbaru. Grafik **Aktivitas Akun Admin** menghitung AuditLog aktual untuk setiap Admin pada periode terpilih, termasuk nilai nol; grafik ini tidak mengikuti filter Tambak karena AuditLog tidak memiliki relasi lokasi yang seragam. Filter periode hanya memengaruhi data historis dan aktivitas; stok saat ini tetap memakai posisi `pond_stocks` terkini.
+Menampilkan KPI utama, posisi stok terkini, grafik berdasarkan Tambak dan komoditas, tren pembibitan/kematian/biaya pakan, aktivitas transaksi, serta AuditLog terbaru. Filter periode hanya memengaruhi data historis dan aktivitas; stok saat ini tetap memakai posisi `pond_stocks` terkini.
 
 ### Tambak
 
@@ -328,6 +328,10 @@ Mengelola penyedia bibit, pakan, obat, jasa, atau beberapa jenis kebutuhan sekal
 ### Pakan, Nutrisi & Obat
 
 Mengelola master kebutuhan operasional berdasarkan jenis `FEED`, `NUTRITION`, `MEDICINE`, atau `OTHER`, termasuk satuan, harga acuan, dan Vendor utama. Kode dibuat otomatis sesuai jenis dan tetap menjadi identitas record ketika data diedit.
+
+### Chart of Accounts
+
+Mengelola master akun untuk kebutuhan akuntansi. **Nomor Akun diinput manual oleh Admin**, wajib numerik, disimpan sebagai teks agar nol di depan tetap utuh, dan harus unik. Deskripsi, Tipe Akun, serta Laporan Keuangan memakai dropdown berbasis database; ketiganya menyediakan **Tambah Baru** yang langsung menambahkan dan memilih opsi tanpa menutup form utama. Modul ini belum mencakup jurnal, buku besar, posting debit-kredit, saldo, transaksi akuntansi, atau laporan akuntansi.
 
 ### Pembibitan
 
@@ -359,7 +363,7 @@ Menyediakan delapan laporan: Stok Saat Ini, Pembibitan, Pemindahan Stok, Perubah
 
 Admin bertanggung jawab atas master data dan transaksi operasional aplikasi:
 
-- Membuat, melihat, mengubah, mengaktifkan, atau menonaktifkan master Tambak, Komoditas, Vendor, dan Pakan/Nutrisi/Obat.
+- Membuat, melihat, mengubah, mengaktifkan, atau menonaktifkan master Tambak, Komoditas, Vendor, Pakan/Nutrisi/Obat, dan Chart of Accounts, termasuk menambah pilihan akuntansi.
 - Membuat, melihat, mengubah, dan menghapus Pembibitan, Pemindahan Stok, Perubahan Jumlah, dan Pemberian Pakan selama aturan keselamatan bisnis mengizinkan.
 - Memeriksa Dashboard, Riwayat Transaksi, AuditLog yang ditampilkan, dan Laporan.
 - Melakukan export, Print, dan PDF untuk kebutuhan operasional.
@@ -385,6 +389,7 @@ Role Manager tetap mendukung transaksi operasional, tetapi tidak memiliki akun d
 | Master Komoditas | Kelola | Lihat |
 | Master Vendor | Kelola | Lihat |
 | Master Pakan/Nutrisi/Obat | Kelola | Lihat |
+| Master Chart of Accounts | Kelola | Lihat |
 | Pembibitan | Kelola | Kelola |
 | Pemindahan Stok | Kelola | Kelola |
 | Perubahan Jumlah | Kelola | Kelola |

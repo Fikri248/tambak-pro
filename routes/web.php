@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\AccountLookupController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\ChartOfAccountController;
 use App\Http\Controllers\CommodityController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FeedingTransactionController;
@@ -83,6 +85,24 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::middleware('access:feed-items.view')->controller(FeedItemController::class)->group(function () {
         Route::get('/pakan', 'index')->name('feed-items.index');
         Route::get('/pakan/{feedItem}', 'show')->name('feed-items.show');
+    });
+
+    Route::middleware('access:chart-of-accounts.manage')->group(function () {
+        Route::post('/chart-of-accounts/lookups', [AccountLookupController::class, 'store'])
+            ->name('chart-of-accounts.lookups.store');
+
+        Route::controller(ChartOfAccountController::class)->group(function () {
+            Route::get('/chart-of-accounts/create', 'create')->name('chart-of-accounts.create');
+            Route::post('/chart-of-accounts', 'store')->name('chart-of-accounts.store');
+            Route::get('/chart-of-accounts/{chartOfAccount}/edit', 'edit')->name('chart-of-accounts.edit');
+            Route::match(['put', 'patch'], '/chart-of-accounts/{chartOfAccount}', 'update')->name('chart-of-accounts.update');
+            Route::patch('/chart-of-accounts/{chartOfAccount}/status', 'status')->name('chart-of-accounts.status');
+        });
+    });
+
+    Route::middleware('access:chart-of-accounts.view')->controller(ChartOfAccountController::class)->group(function () {
+        Route::get('/chart-of-accounts', 'index')->name('chart-of-accounts.index');
+        Route::get('/chart-of-accounts/{chartOfAccount}', 'show')->name('chart-of-accounts.show');
     });
 
     Route::middleware('access:stocking.create')->controller(StockingTransactionController::class)->group(function () {

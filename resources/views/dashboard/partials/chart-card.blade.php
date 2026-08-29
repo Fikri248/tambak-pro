@@ -19,10 +19,6 @@
                 @foreach ($chart['datasets'] as $dataset)
                     {{ $dataset['label'] }} {{ number_format(array_sum($dataset['values']), 0, ',', '.') }} transaksi.
                 @endforeach
-            @elseif ($chartKey === 'adminActivity')
-                @foreach ($chart['labels'] as $index => $label)
-                    {{ $label }} {{ number_format((int) ($chart['values'][$index] ?? 0), 0, ',', '.') }} aktivitas.
-                @endforeach
             @else
                 @foreach ($chart['labels'] as $index => $label)
                     @if (($chart['values'][$index] ?? 0) > 0)

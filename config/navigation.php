@@ -14,6 +14,7 @@ return [
                 ['label' => 'Komoditas', 'icon' => 'package', 'route' => 'commodities.index', 'active' => 'commodities.*', 'ability' => 'commodities.view'],
                 ['label' => 'Vendor', 'icon' => 'truck', 'route' => 'vendors.index', 'active' => 'vendors.*', 'ability' => 'vendors.view'],
                 ['label' => 'Pakan, Nutrisi & Obat', 'icon' => 'feed', 'route' => 'feed-items.index', 'active' => 'feed-items.*', 'ability' => 'feed-items.view'],
+                ['label' => 'Chart of Accounts', 'icon' => 'coins', 'route' => 'chart-of-accounts.index', 'active' => 'chart-of-accounts.*', 'ability' => 'chart-of-accounts.view'],
             ],
         ],
         [

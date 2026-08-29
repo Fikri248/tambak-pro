@@ -20,6 +20,8 @@ return [
         'vendors.manage' => ['Admin'],
         'feed-items.view' => ['Admin', 'Manager'],
         'feed-items.manage' => ['Admin'],
+        'chart-of-accounts.view' => ['Admin', 'Manager'],
+        'chart-of-accounts.manage' => ['Admin'],
         'stocking.view' => ['Admin', 'Manager'],
         'stocking.create' => ['Admin', 'Manager'],
         'stocking.update' => ['Admin', 'Manager'],
