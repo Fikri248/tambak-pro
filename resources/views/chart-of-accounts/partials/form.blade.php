@@ -25,6 +25,7 @@
             'newField' => 'new_description',
             'label' => 'Deskripsi',
             'options' => $descriptions,
+            'managedOptions' => $managedDescriptions,
             'selectedId' => $account->description_id ?? null,
         ])
         @include('chart-of-accounts.partials.lookup-field', [
@@ -33,6 +34,7 @@
             'newField' => 'new_account_type',
             'label' => 'Tipe Akun',
             'options' => $accountTypes,
+            'managedOptions' => $managedAccountTypes,
             'selectedId' => $account->account_type_id ?? null,
         ])
         @include('chart-of-accounts.partials.lookup-field', [
@@ -41,6 +43,7 @@
             'newField' => 'new_financial_statement',
             'label' => 'Laporan Keuangan',
             'options' => $financialStatements,
+            'managedOptions' => $managedFinancialStatements,
             'selectedId' => $account->financial_statement_id ?? null,
         ])
     </div>

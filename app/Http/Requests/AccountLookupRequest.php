@@ -25,20 +25,43 @@ class AccountLookupRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return [
+        $rules = [
             'lookup_type' => ['required', Rule::in(array_keys(self::TYPES))],
-            'new_description' => ['exclude_unless:lookup_type,description', 'required', 'string', 'max:255'],
-            'new_account_type' => ['exclude_unless:lookup_type,account_type', 'required', 'string', 'max:255'],
-            'new_financial_statement' => ['exclude_unless:lookup_type,financial_statement', 'required', 'string', 'max:255'],
         ];
+
+        if ($this->isMethod('PATCH')) {
+            $rules['lookup_name'] = ['required', 'string', 'max:255'];
+
+            return $rules;
+        }
+
+        if ($this->isMethod('POST')) {
+            $rules['new_description'] = ['exclude_unless:lookup_type,description', 'required', 'string', 'max:255'];
+            $rules['new_account_type'] = ['exclude_unless:lookup_type,account_type', 'required', 'string', 'max:255'];
+            $rules['new_financial_statement'] = ['exclude_unless:lookup_type,financial_statement', 'required', 'string', 'max:255'];
+        }
+
+        return $rules;
     }
 
     protected function prepareForValidation(): void
     {
+        $lookupType = (string) ($this->route('lookupType') ?: $this->input('lookup_type'));
+
+        if ($lookupType !== '') {
+            $this->merge(['lookup_type' => $lookupType]);
+        }
+
         foreach (self::TYPES as [, $field]) {
             if ($this->exists($field)) {
                 $this->merge([$field => trim((string) $this->input($field))]);
             }
+        }
+
+        if ($this->isMethod('PATCH')) {
+            $lookup = (string) $this->route('lookup');
+            $fallbackName = $this->input("lookup_names.{$lookupType}.{$lookup}");
+            $this->merge(['lookup_name' => trim((string) ($this->input('lookup_name') ?? $fallbackName))]);
         }
     }
 
@@ -51,10 +74,17 @@ class AccountLookupRequest extends FormRequest
                 return;
             }
 
-            [$model, $field, , $label] = $definition;
+            [$model, $createField, , $label] = $definition;
+            $field = $this->isMethod('PATCH') ? 'lookup_name' : $createField;
             $name = (string) $this->input($field);
 
-            if ($name !== '' && $model::query()->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->exists()) {
+            $query = $model::query()->whereRaw('LOWER(name) = ?', [mb_strtolower($name)]);
+
+            if ($this->isMethod('PATCH')) {
+                $query->whereKeyNot((int) $this->route('lookup'));
+            }
+
+            if ($name !== '' && $query->exists()) {
                 $validator->errors()->add($field, "{$label} sudah tersedia.");
             }
         }];
@@ -69,6 +99,7 @@ class AccountLookupRequest extends FormRequest
             'new_description.required' => 'Nama Deskripsi wajib diisi.',
             'new_account_type.required' => 'Nama Tipe Akun wajib diisi.',
             'new_financial_statement.required' => 'Nama Laporan Keuangan wajib diisi.',
+            'lookup_name.required' => 'Nama pilihan wajib diisi.',
             '*.max' => 'Nama pilihan maksimal 255 karakter.',
         ];
     }

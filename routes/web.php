@@ -90,6 +90,10 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::middleware('access:chart-of-accounts.manage')->group(function () {
         Route::post('/chart-of-accounts/lookups', [AccountLookupController::class, 'store'])
             ->name('chart-of-accounts.lookups.store');
+        Route::patch('/chart-of-accounts/lookups/{lookupType}/{lookup}', [AccountLookupController::class, 'update'])
+            ->name('chart-of-accounts.lookups.update');
+        Route::delete('/chart-of-accounts/lookups/{lookupType}/{lookup}', [AccountLookupController::class, 'destroy'])
+            ->name('chart-of-accounts.lookups.destroy');
 
         Route::controller(ChartOfAccountController::class)->group(function () {
             Route::get('/chart-of-accounts/create', 'create')->name('chart-of-accounts.create');

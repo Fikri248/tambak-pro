@@ -121,6 +121,9 @@ class ChartOfAccountController extends Controller
             'descriptions' => $this->availableOptions(AccountDescription::query(), $account?->description_id),
             'accountTypes' => $this->availableOptions(AccountType::query(), $account?->account_type_id),
             'financialStatements' => $this->availableOptions(FinancialStatement::query(), $account?->financial_statement_id),
+            'managedDescriptions' => AccountDescription::query()->orderBy('name')->get(['id', 'name', 'status']),
+            'managedAccountTypes' => AccountType::query()->orderBy('name')->get(['id', 'name', 'status']),
+            'managedFinancialStatements' => FinancialStatement::query()->orderBy('name')->get(['id', 'name', 'status']),
         ];
     }
 
