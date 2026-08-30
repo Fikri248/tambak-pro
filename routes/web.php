@@ -107,6 +107,7 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::get('/chart-of-accounts/{chartOfAccount}/edit', 'edit')->name('chart-of-accounts.edit');
             Route::match(['put', 'patch'], '/chart-of-accounts/{chartOfAccount}', 'update')->name('chart-of-accounts.update');
             Route::patch('/chart-of-accounts/{chartOfAccount}/status', 'status')->name('chart-of-accounts.status');
+            Route::delete('/chart-of-accounts/{chartOfAccount}', 'destroy')->name('chart-of-accounts.destroy');
         });
     });
 

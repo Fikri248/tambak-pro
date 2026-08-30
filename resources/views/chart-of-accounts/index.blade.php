@@ -59,7 +59,7 @@
                                 <th scope="col" class="px-5 py-3 text-center">Tipe Akun</th>
                                 <th scope="col" class="px-5 py-3 text-center">Laporan Keuangan</th>
                                 <th scope="col" class="px-5 py-3 text-center">Status</th>
-                                <th scope="col" class="px-5 py-3 text-center">Aksi</th>
+                                <th scope="col" class="w-[180px] min-w-[180px] px-5 py-3 text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-neutral-100">
@@ -72,15 +72,20 @@
                                     <td class="px-5 py-3.5 text-center align-middle! text-neutral-700">{{ $account->accountType->name }}</td>
                                     <td class="px-5 py-3.5 text-center align-middle! text-neutral-700">{{ $account->financialStatement->name }}</td>
                                     <td class="px-5 py-3.5 text-center align-middle!"><x-badge>{{ $account->status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif' }}</x-badge></td>
-                                    <td class="px-5 py-3 text-center align-middle!">
-                                        <div class="flex justify-center gap-1">
-                                            <a href="{{ route('chart-of-accounts.show', $account) }}" data-crud-modal data-crud-modal-size="lg" class="flex size-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900" aria-label="Detail akun {{ $account->number_code }}" title="Detail"><x-icon name="eye" class="size-4" /></a>
+                                    <td class="w-[180px] min-w-[180px] px-5 py-3 text-center align-middle!">
+                                        <div class="flex flex-nowrap items-center justify-center gap-1" data-chart-of-account-actions>
+                                            <a href="{{ route('chart-of-accounts.show', $account) }}" data-crud-modal data-crud-modal-size="lg" class="inline-flex size-9 shrink-0 items-center justify-center rounded-lg leading-none text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900" aria-label="Detail akun {{ $account->number_code }}" title="Detail"><x-icon name="eye" class="block size-5 shrink-0" /></a>
                                             @if (auth()->user()->canAccess('chart-of-accounts.manage'))
-                                                <a href="{{ route('chart-of-accounts.edit', $account) }}" data-crud-modal data-crud-modal-size="xl" class="flex size-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900" aria-label="Edit akun {{ $account->number_code }}" title="Edit"><x-icon name="edit" class="size-4" /></a>
-                                                <form method="POST" action="{{ route('chart-of-accounts.status', $account) }}" data-confirm="{{ $account->status === 'ACTIVE' ? 'Nonaktifkan akun ini?' : 'Aktifkan akun ini?' }}" data-confirm-title="{{ $account->status === 'ACTIVE' ? 'Nonaktifkan Akun' : 'Aktifkan Akun' }}" data-confirm-action="{{ $account->status === 'ACTIVE' ? 'Nonaktifkan' : 'Aktifkan' }}">
+                                                <a href="{{ route('chart-of-accounts.edit', $account) }}" data-crud-modal data-crud-modal-size="xl" class="inline-flex size-9 shrink-0 items-center justify-center rounded-lg leading-none text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900" aria-label="Edit akun {{ $account->number_code }}" title="Edit"><x-icon name="edit" class="block size-5 shrink-0" /></a>
+                                                <form method="POST" action="{{ route('chart-of-accounts.status', $account) }}" class="m-0 inline-flex size-9 shrink-0 items-center justify-center leading-none" data-confirm="{{ $account->status === 'ACTIVE' ? 'Nonaktifkan akun ini?' : 'Aktifkan akun ini?' }}" data-confirm-title="{{ $account->status === 'ACTIVE' ? 'Nonaktifkan Akun' : 'Aktifkan Akun' }}" data-confirm-action="{{ $account->status === 'ACTIVE' ? 'Nonaktifkan' : 'Aktifkan' }}">
                                                     @csrf
                                                     @method('PATCH')
-                                                    <button type="submit" class="flex size-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900" aria-label="{{ $account->status === 'ACTIVE' ? 'Nonaktifkan' : 'Aktifkan' }} akun {{ $account->number_code }}" title="{{ $account->status === 'ACTIVE' ? 'Nonaktifkan' : 'Aktifkan' }}"><x-icon name="power" class="size-4" /></button>
+                                                    <button type="submit" class="inline-flex size-9 shrink-0 items-center justify-center rounded-lg leading-none text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900" aria-label="{{ $account->status === 'ACTIVE' ? 'Nonaktifkan' : 'Aktifkan' }} akun {{ $account->number_code }}" title="{{ $account->status === 'ACTIVE' ? 'Nonaktifkan' : 'Aktifkan' }}"><x-icon name="power" class="block size-5 shrink-0" /></button>
+                                                </form>
+                                                <form method="POST" action="{{ route('chart-of-accounts.destroy', $account) }}" class="m-0 inline-flex size-9 shrink-0 items-center justify-center leading-none" data-confirm="Chart of Accounts dengan Nomor Akun {{ $account->number_code }} akan dihapus permanen." data-confirm-title="Hapus Chart of Accounts?" data-confirm-description="Deskripsi: {{ $account->description->name }}. Tindakan ini tidak dapat dibatalkan." data-confirm-action="Hapus" data-confirm-tone="danger">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="inline-flex size-9 shrink-0 items-center justify-center rounded-lg leading-none text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900" aria-label="Hapus Chart of Accounts {{ $account->number_code }}" title="Hapus"><x-icon name="trash" class="block size-5 shrink-0" /></button>
                                                 </form>
                                             @endif
                                         </div>

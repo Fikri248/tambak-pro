@@ -10,6 +10,8 @@ use App\Models\FinancialStatement;
 use App\Support\PageSize;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -114,6 +116,41 @@ class ChartOfAccountController extends Controller
         );
     }
 
+    public function destroy(Request $request, ChartOfAccount $chartOfAccount): JsonResponse|RedirectResponse
+    {
+        abort_unless($request->user()?->canAccess('chart-of-accounts.manage'), 403);
+
+        try {
+            DB::transaction(function () use ($chartOfAccount): void {
+                $account = ChartOfAccount::query()->lockForUpdate()->findOrFail($chartOfAccount->id);
+                $account->delete();
+            });
+        } catch (QueryException $exception) {
+            if (! $this->isForeignKeyConstraintViolation($exception)) {
+                throw $exception;
+            }
+
+            $message = 'Chart of Accounts tidak dapat dihapus karena masih digunakan oleh data lain.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 409);
+            }
+
+            return back()->with('error', $message);
+        }
+
+        $message = 'Chart of Accounts berhasil dihapus.';
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'deleted_id' => (string) $chartOfAccount->id,
+            ]);
+        }
+
+        return back()->with('success', $message);
+    }
+
     /** @return array<string, mixed> */
     private function formData(?ChartOfAccount $account = null): array
     {
@@ -139,5 +176,10 @@ class ChartOfAccountController extends Controller
             })
             ->orderBy('name')
             ->get(['id', 'name', 'status']);
+    }
+
+    private function isForeignKeyConstraintViolation(QueryException $exception): bool
+    {
+        return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23503'], true);
     }
 }
