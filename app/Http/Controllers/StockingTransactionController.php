@@ -13,6 +13,7 @@ use App\Models\Location;
 use App\Models\PondStock;
 use App\Models\StockingTransaction;
 use App\Models\Vendor;
+use App\Models\VendorType;
 use App\Services\BusinessCodeGenerator;
 use App\Services\Transactions\StockingTransactionMutationService;
 use App\Support\PageSize;
@@ -101,10 +102,14 @@ class StockingTransactionController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'code', 'name', 'unit']),
             'vendors' => Vendor::query()
+                ->with('vendorType:id,name,semantic_type')
                 ->where('status', 'ACTIVE')
-                ->whereIn('vendor_type', ['SEED', 'MULTIPLE'])
+                ->whereHas('vendorType', fn (Builder $query) => $query->whereIn(
+                    'semantic_type',
+                    [VendorType::SEMANTIC_SEED, VendorType::SEMANTIC_MULTIPLE],
+                ))
                 ->orderBy('name')
-                ->get(['id', 'code', 'name', 'vendor_type']),
+                ->get(['id', 'code', 'name', 'vendor_type_id']),
         ]);
     }
 
@@ -128,7 +133,10 @@ class StockingTransactionController extends Controller
                 $vendor = Vendor::query()
                     ->whereKey($validated['vendor_id'])
                     ->where('status', 'ACTIVE')
-                    ->whereIn('vendor_type', ['SEED', 'MULTIPLE'])
+                    ->whereHas('vendorType', fn (Builder $query) => $query->whereIn(
+                        'semantic_type',
+                        [VendorType::SEMANTIC_SEED, VendorType::SEMANTIC_MULTIPLE],
+                    ))
                     ->lockForUpdate()
                     ->first();
 
@@ -257,12 +265,16 @@ class StockingTransactionController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'code', 'name', 'unit']),
             'vendors' => Vendor::query()
-                ->whereIn('vendor_type', ['SEED', 'MULTIPLE'])
+                ->with('vendorType:id,name,semantic_type')
+                ->whereHas('vendorType', fn (Builder $query) => $query->whereIn(
+                    'semantic_type',
+                    [VendorType::SEMANTIC_SEED, VendorType::SEMANTIC_MULTIPLE],
+                ))
                 ->where(fn (Builder $query) => $query
                     ->where('status', 'ACTIVE')
                     ->orWhere('id', $stockingTransaction->batch->vendor_id))
                 ->orderBy('name')
-                ->get(['id', 'code', 'name', 'vendor_type']),
+                ->get(['id', 'code', 'name', 'vendor_type_id']),
         ]);
     }
 

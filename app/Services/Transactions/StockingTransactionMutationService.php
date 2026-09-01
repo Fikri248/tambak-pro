@@ -10,6 +10,7 @@ use App\Models\Location;
 use App\Models\PondStock;
 use App\Models\StockingTransaction;
 use App\Models\Vendor;
+use App\Models\VendorType;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -193,7 +194,7 @@ class StockingTransactionMutationService
             throw ValidationException::withMessages(['commodity_id' => 'Komoditas yang dipilih tidak aktif.']);
         }
 
-        if (! $vendor || ! in_array($vendor->vendor_type, ['SEED', 'MULTIPLE'], true)
+        if (! $vendor || ! $vendor->hasVendorSemantic(VendorType::SEMANTIC_SEED, VendorType::SEMANTIC_MULTIPLE)
             || ($vendor->status !== 'ACTIVE' && $vendor->id !== $batch->vendor_id)) {
             throw ValidationException::withMessages(['vendor_id' => 'Vendor yang dipilih tidak dapat digunakan untuk pembibitan.']);
         }

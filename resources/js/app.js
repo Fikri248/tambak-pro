@@ -6,6 +6,7 @@ import { initializeCrudModal } from './crud-modal';
 import { initializeDashboardCharts } from './dashboard-charts';
 import { initializeFilterControls } from './filter-controls';
 import { initializePageSizeControls } from './page-size';
+import { initializeVendorTypeLookups } from './vendor-type-lookups';
 
 const initializeSidebar = () => {
     const sidebar = document.querySelector('[data-sidebar]');
@@ -648,6 +649,7 @@ const initializeFeedingForm = () => {
 
 const initializeDynamicContent = () => {
     initializeChartOfAccountLookups();
+    initializeVendorTypeLookups();
     initializePasswordVisibility();
     initializeStockingForm();
     initializeMovementForm();

@@ -19,14 +19,6 @@ final class UserFacing
         'FEEDING' => 'Pemberian Pakan',
     ];
 
-    public const VENDOR_TYPES = [
-        'SEED' => 'Vendor Bibit',
-        'FEED' => 'Vendor Pakan',
-        'SERVICE' => 'Vendor Jasa',
-        'MULTIPLE' => 'Vendor Beragam',
-        'OTHER' => 'Lainnya',
-    ];
-
     public const FEED_ITEM_TYPES = [
         'FEED' => 'Pakan',
         'NUTRITION' => 'Nutrisi',

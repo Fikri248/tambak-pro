@@ -21,7 +21,7 @@
             <option value="">Tanpa Vendor Utama</option>
             @foreach ($vendors as $vendor)
                 <option value="{{ $vendor->id }}" @selected((string) $selectedVendor === (string) $vendor->id)>
-                    {{ $vendor->name }} — {{ $vendorTypeLabels[$vendor->vendor_type] ?? 'Lainnya' }}{{ $vendor->status !== 'ACTIVE' ? ' (Tidak aktif — ganti atau kosongkan)' : '' }}
+                    {{ $vendor->name }} — {{ $vendor->vendorType->name }}{{ $vendor->status !== 'ACTIVE' ? ' (Tidak aktif — ganti atau kosongkan)' : '' }}
                 </option>
             @endforeach
         </x-form.select>

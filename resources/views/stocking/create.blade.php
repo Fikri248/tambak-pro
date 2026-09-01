@@ -39,7 +39,7 @@
                         <option value="">Pilih Vendor</option>
                         @foreach ($vendors as $vendor)
                             <option value="{{ $vendor->id }}" data-label="{{ $vendor->name }}" @selected((string) old('vendor_id') === (string) $vendor->id)>
-                                {{ $vendor->name }} · {{ $vendor->vendor_type === 'SEED' ? 'Vendor Bibit' : 'Vendor Beragam' }}
+                                {{ $vendor->name }} · {{ $vendor->vendorType->name }}
                             </option>
                         @endforeach
                     </x-form.select>

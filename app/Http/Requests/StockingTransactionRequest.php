@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\VendorType;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -49,7 +50,9 @@ class StockingTransactionRequest extends FormRequest
                 Rule::exists('vendors', 'id')->where(
                     fn (Builder $query) => $query
                         ->where('status', 'ACTIVE')
-                        ->whereIn('vendor_type', ['SEED', 'MULTIPLE']),
+                        ->whereIn('vendor_type_id', VendorType::query()
+                            ->select('id')
+                            ->whereIn('semantic_type', [VendorType::SEMANTIC_SEED, VendorType::SEMANTIC_MULTIPLE])),
                 ),
             ],
             'batch_code' => ['prohibited'],

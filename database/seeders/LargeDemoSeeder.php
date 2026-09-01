@@ -14,6 +14,7 @@ use App\Models\StockingTransaction;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Models\VendorType;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Eloquent\Model;
@@ -185,6 +186,7 @@ class LargeDemoSeeder extends Seeder
     private function seedVendors(): array
     {
         $types = ['SEED', 'FEED', 'SERVICE', 'MULTIPLE', 'OTHER'];
+        $typeIds = VendorType::query()->whereIn('code', $types)->pluck('id', 'code');
         $rows = [];
         $seedCodes = [];
         $feedCodes = [];
@@ -198,7 +200,7 @@ class LargeDemoSeeder extends Seeder
                 'name' => $index % 50 === 0
                     ? sprintf('Vendor Demo Budidaya Perairan Terpadu Cabang Pantai Utara Nomor %04d', $index)
                     : sprintf('Vendor Demo %04d', $index),
-                'vendor_type' => $type,
+                'vendor_type_id' => $typeIds->get($type),
                 'phone' => sprintf('+62-811-90%04d', $index),
                 'email' => sprintf('vendor.%04d@demo.tambak.local', $index),
                 'address' => $index % 25 === 0
@@ -222,7 +224,7 @@ class LargeDemoSeeder extends Seeder
             Vendor::class,
             $rows,
             ['code'],
-            ['name', 'vendor_type', 'phone', 'email', 'address', 'description', 'status'],
+            ['name', 'vendor_type_id', 'phone', 'email', 'address', 'description', 'status'],
         );
 
         $ids = Vendor::query()

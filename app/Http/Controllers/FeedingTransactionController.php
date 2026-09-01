@@ -12,6 +12,7 @@ use App\Models\FeedItem;
 use App\Models\Location;
 use App\Models\PondStock;
 use App\Models\Vendor;
+use App\Models\VendorType;
 use App\Support\PageSize;
 use App\Support\UserFacing;
 use Carbon\Carbon;
@@ -137,7 +138,7 @@ class FeedingTransactionController extends Controller
             })
             ->all();
         $feedItems = FeedItem::query()
-            ->with('defaultVendor:id,status,vendor_type')
+            ->with(['defaultVendor:id,status,vendor_type_id', 'defaultVendor.vendorType:id,name,semantic_type'])
             ->where('status', 'ACTIVE')
             ->orderBy('name')
             ->get(['id', 'code', 'name', 'item_type', 'unit', 'default_price', 'default_vendor_id']);
@@ -145,7 +146,7 @@ class FeedingTransactionController extends Controller
             $defaultVendor = $item->defaultVendor;
             $validDefaultVendor = $defaultVendor
                 && $defaultVendor->status === 'ACTIVE'
-                && in_array($defaultVendor->vendor_type, ['FEED', 'MULTIPLE'], true);
+                && $defaultVendor->hasVendorSemantic(VendorType::SEMANTIC_FEED, VendorType::SEMANTIC_MULTIPLE);
 
             return [(string) $item->id => [
                 'id' => $item->id,
@@ -165,12 +166,15 @@ class FeedingTransactionController extends Controller
             'feedItems' => $feedItems,
             'itemOptions' => $itemOptions,
             'vendors' => Vendor::query()
+                ->with('vendorType:id,name,semantic_type')
                 ->where('status', 'ACTIVE')
-                ->whereIn('vendor_type', ['FEED', 'MULTIPLE'])
+                ->whereHas('vendorType', fn (Builder $query) => $query->whereIn(
+                    'semantic_type',
+                    [VendorType::SEMANTIC_FEED, VendorType::SEMANTIC_MULTIPLE],
+                ))
                 ->orderBy('name')
-                ->get(['id', 'code', 'name', 'vendor_type']),
+                ->get(['id', 'code', 'name', 'vendor_type_id']),
             'typeLabels' => UserFacing::FEED_ITEM_TYPES,
-            'vendorTypeLabels' => UserFacing::VENDOR_TYPES,
         ]);
     }
 
@@ -206,7 +210,7 @@ class FeedingTransactionController extends Controller
                         ->lockForUpdate()
                         ->first();
 
-                    if (! $vendor || $vendor->status !== 'ACTIVE' || ! in_array($vendor->vendor_type, ['FEED', 'MULTIPLE'], true)) {
+                    if (! $vendor || $vendor->status !== 'ACTIVE' || ! $vendor->hasVendorSemantic(VendorType::SEMANTIC_FEED, VendorType::SEMANTIC_MULTIPLE)) {
                         throw ValidationException::withMessages(['vendor_id' => 'Vendor yang dipilih tidak valid.']);
                     }
                 }
@@ -335,7 +339,8 @@ class FeedingTransactionController extends Controller
             'batch:id,batch_code,commodity_id',
             'batch.commodity:id,name,unit',
             'feedItem:id,code,name,item_type,unit',
-            'vendor:id,code,name,vendor_type',
+            'vendor:id,code,name,vendor_type_id',
+            'vendor.vendorType:id,name,semantic_type',
         ]);
 
         $locations = Location::query()
@@ -364,9 +369,16 @@ class FeedingTransactionController extends Controller
             ->orderBy('name')
             ->get(['id', 'code', 'name', 'item_type', 'unit']);
         $vendors = Vendor::query()
+            ->with('vendorType:id,name,semantic_type')
             ->where(function (Builder $query) use ($feedingTransaction): void {
                 $query->where(function (Builder $query): void {
-                    $query->where('status', 'ACTIVE')->whereIn('vendor_type', ['FEED', 'MULTIPLE']);
+                    $query->where('status', 'ACTIVE')->whereHas(
+                        'vendorType',
+                        fn (Builder $query) => $query->whereIn(
+                            'semantic_type',
+                            [VendorType::SEMANTIC_FEED, VendorType::SEMANTIC_MULTIPLE],
+                        ),
+                    );
                 });
 
                 if ($feedingTransaction->vendor_id) {
@@ -374,7 +386,7 @@ class FeedingTransactionController extends Controller
                 }
             })
             ->orderBy('name')
-            ->get(['id', 'code', 'name', 'vendor_type']);
+            ->get(['id', 'code', 'name', 'vendor_type_id']);
 
         return view('feeding.edit', compact('feedingTransaction', 'locations', 'batches', 'feedItems', 'vendors'));
     }
@@ -405,7 +417,7 @@ class FeedingTransactionController extends Controller
                 if ($validated['vendor_id'] ?? null) {
                     $vendor = Vendor::query()->whereKey($validated['vendor_id'])->lockForUpdate()->first();
 
-                    if (! $vendor || $vendor->status !== 'ACTIVE' || ! in_array($vendor->vendor_type, ['FEED', 'MULTIPLE'], true)) {
+                    if (! $vendor || $vendor->status !== 'ACTIVE' || ! $vendor->hasVendorSemantic(VendorType::SEMANTIC_FEED, VendorType::SEMANTIC_MULTIPLE)) {
                         throw ValidationException::withMessages(['vendor_id' => 'Vendor yang dipilih tidak valid.']);
                     }
                 }

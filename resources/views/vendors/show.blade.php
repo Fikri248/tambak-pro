@@ -12,7 +12,7 @@
                         <h1 class="text-2xl font-semibold tracking-tight text-neutral-950 sm:text-[26px]">{{ $vendor->name }}</h1>
                         <x-badge>{{ $vendor->status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif' }}</x-badge>
                     </div>
-                    <p class="mt-1 text-sm text-neutral-500">{{ $vendor->code }} · {{ $typeLabels[$vendor->vendor_type] ?? 'Lainnya' }}</p>
+                    <p class="mt-1 text-sm text-neutral-500">{{ $vendor->code }} · {{ $vendor->vendorType->name }}</p>
                 </div>
 
                 @if (auth()->user()->canAccess('vendors.manage'))
@@ -48,7 +48,7 @@
             <dl class="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
                 <div><dt class="text-xs text-neutral-500">Kode</dt><dd class="mt-1 font-mono text-sm font-medium text-neutral-900">{{ $vendor->code }}</dd></div>
                 <div><dt class="text-xs text-neutral-500">Nama</dt><dd class="mt-1 text-sm font-medium text-neutral-900">{{ $vendor->name }}</dd></div>
-                <div><dt class="text-xs text-neutral-500">Jenis</dt><dd class="mt-1 text-sm font-medium text-neutral-900">{{ $typeLabels[$vendor->vendor_type] ?? 'Lainnya' }}</dd></div>
+                <div><dt class="text-xs text-neutral-500">Jenis</dt><dd class="mt-1 text-sm font-medium text-neutral-900">{{ $vendor->vendorType->name }}</dd></div>
                 <div><dt class="text-xs text-neutral-500">Status</dt><dd class="mt-1 text-sm font-medium text-neutral-900">{{ $vendor->status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif' }}</dd></div>
                 @if ($vendor->phone)
                     @php

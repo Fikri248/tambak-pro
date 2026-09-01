@@ -82,7 +82,7 @@
                                             <p class="mt-0.5 max-w-[220px] truncate text-xs text-neutral-500">{{ $vendor->address }}</p>
                                         @endif
                                     </td>
-                                    <td class="px-5 py-3.5 text-center"><x-badge>{{ $typeLabels[$vendor->vendor_type] ?? 'Lainnya' }}</x-badge></td>
+                                    <td class="px-5 py-3.5 text-center"><x-badge>{{ $vendor->vendorType->name }}</x-badge></td>
                                     <td class="px-5 py-3.5 text-center">
                                         @if ($vendor->phone || $vendor->email)
                                             <div class="space-y-0.5 text-center text-xs text-neutral-600">

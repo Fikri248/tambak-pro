@@ -3,6 +3,7 @@
 namespace App\Services\Reports;
 
 use App\Exports\Reports\ReportExportDefinition;
+use App\Models\VendorType;
 use App\Support\PageSize;
 use App\Support\UserFacing;
 use Carbon\Carbon;
@@ -223,7 +224,7 @@ class OperationalReportService
     private function vendorExport(array $filters): ReportExportDefinition
     {
         $query = $this->vendorQuery($filters)
-            ->select(['vendor.code', 'vendor.name', 'vendor.vendor_type', 'vendor.status'])
+            ->select(['vendor.code', 'vendor.name', 'vendor_type.name as vendor_type_name', 'vendor.status'])
             ->selectRaw('COALESCE(batch_usage.batch_count, 0) as batch_count, COALESCE(stocking_usage.stocking_value, 0) as stocking_value, COALESCE(feeding_usage.feeding_count, 0) as feeding_count, COALESCE(feeding_usage.feeding_cost, 0) as feeding_cost')
             ->orderBy('vendor.name')->orderBy('vendor.code')->orderBy('vendor.id');
 
@@ -231,7 +232,7 @@ class OperationalReportService
             'Kode Vendor', 'Vendor', 'Jenis', 'Status', 'Jumlah Batch', 'Nilai Pembibitan',
             'Jumlah Transaksi Pakan', 'Biaya Pakan, Nutrisi & Obat',
         ], $query, fn (object $row): array => [
-            $row->code, $row->name, UserFacing::VENDOR_TYPES[$row->vendor_type] ?? 'Lainnya',
+            $row->code, $row->name, $row->vendor_type_name,
             $row->status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif', (int) $row->batch_count,
             (float) $row->stocking_value, (int) $row->feeding_count, (float) $row->feeding_cost,
         ], ['E' => '0', 'F' => '#,##0.00', 'G' => '0', 'H' => '#,##0.00'], $filters);
@@ -522,16 +523,19 @@ class OperationalReportService
         $metrics = [
             'total' => (clone $query)->count('vendor.id'),
             'active' => (clone $query)->where('vendor.status', 'ACTIVE')->count('vendor.id'),
-            'seed_used' => (clone $query)->whereIn('vendor.vendor_type', ['SEED', 'MULTIPLE'])->whereRaw('COALESCE(batch_usage.batch_count, 0) > 0')->count('vendor.id'),
+            'seed_used' => (clone $query)->whereIn(
+                'vendor_type.semantic_type',
+                [VendorType::SEMANTIC_SEED, VendorType::SEMANTIC_MULTIPLE],
+            )->whereRaw('COALESCE(batch_usage.batch_count, 0) > 0')->count('vendor.id'),
             'feed_used' => (clone $query)->whereRaw('COALESCE(feeding_usage.feeding_count, 0) > 0')->count('vendor.id'),
         ];
         $rows = $this->rows(
-            $query->select(['vendor.*'])->selectRaw('COALESCE(batch_usage.batch_count, 0) as batch_count, COALESCE(stocking_usage.stocking_value, 0) as stocking_value, COALESCE(feeding_usage.feeding_count, 0) as feeding_count, COALESCE(feeding_usage.feeding_cost, 0) as feeding_cost')
+            $query->select(['vendor.*', 'vendor_type.name as vendor_type_name'])->selectRaw('COALESCE(batch_usage.batch_count, 0) as batch_count, COALESCE(stocking_usage.stocking_value, 0) as stocking_value, COALESCE(feeding_usage.feeding_count, 0) as feeding_count, COALESCE(feeding_usage.feeding_cost, 0) as feeding_cost')
                 ->orderBy('vendor.name')->orderBy('vendor.code'),
             fn (object $row): array => $this->row([
                 $this->cell($row->code, null, false, 'left', true),
                 $this->cell($row->name, route('vendors.show', $row->id)),
-                $this->cell(UserFacing::VENDOR_TYPES[$row->vendor_type] ?? 'Lainnya', null, true, 'center'),
+                $this->cell($row->vendor_type_name, null, true, 'center'),
                 $this->cell($row->status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif', null, true, 'center'),
                 $this->cell((string) $row->batch_count, null, false, 'center'),
                 $this->cell($this->money((float) $row->stocking_value), null, false, 'right'),
@@ -549,7 +553,7 @@ class OperationalReportService
             $this->summary('Vendor Pakan Terpakai', $metrics['feed_used'], null, 'feed'),
         ], [
             $this->searchField('Cari vendor...'),
-            $this->selectField('type', 'Semua Jenis', $this->mapOptions(UserFacing::VENDOR_TYPES)),
+            $this->selectField('type', 'Semua Jenis', $this->options('vendor_types', 'id', 'name')),
             $this->statusField(), $this->dateField('date_from', 'Tanggal mulai'), $this->dateField('date_to', 'Tanggal selesai'),
         ], ['Kode', 'Vendor', 'Jenis', 'Status', 'Jumlah Batch', 'Nilai Pembibitan', 'Transaksi Pakan', 'Biaya Pakan, Nutrisi & Obat'], $rows, 'Ringkasan Vendor', 'Filter tanggal hanya memengaruhi nilai pembibitan dan penggunaan pakan; jumlah Batch merupakan data master saat ini.');
     }
@@ -726,14 +730,18 @@ class OperationalReportService
         $feedingAgg->selectRaw('COUNT(ft.id) as feeding_count, SUM(ft.total_cost) as feeding_cost')->whereNotNull('ft.vendor_id')->groupBy('ft.vendor_id');
 
         $query = DB::table('vendors as vendor')
+            ->join('vendor_types as vendor_type', 'vendor_type.id', '=', 'vendor.vendor_type_id')
             ->leftJoinSub($batchAgg, 'batch_usage', 'batch_usage.vendor_id', '=', 'vendor.id')
             ->leftJoinSub($stockingAgg, 'stocking_usage', 'stocking_usage.vendor_id', '=', 'vendor.id')
             ->leftJoinSub($feedingAgg, 'feeding_usage', 'feeding_usage.vendor_id', '=', 'vendor.id');
         if ($filters['search'] !== '') {
             $search = '%'.$filters['search'].'%';
-            $query->where(fn (Builder $q) => $q->where('vendor.code', 'like', $search)->orWhere('vendor.name', 'like', $search)->orWhere('vendor.address', 'like', $search));
+            $query->where(fn (Builder $q) => $q->where('vendor.code', 'like', $search)
+                ->orWhere('vendor.name', 'like', $search)
+                ->orWhere('vendor.address', 'like', $search)
+                ->orWhere('vendor_type.name', 'like', $search));
         }
-        $this->whereOptional($query, 'vendor.vendor_type', $filters['type']);
+        $this->whereOptional($query, 'vendor.vendor_type_id', $filters['type']);
         $this->whereOptional($query, 'vendor.status', $filters['status']);
 
         return $query;
@@ -884,7 +892,10 @@ class OperationalReportService
         }
 
         if ($filters['type']) {
-            $parts[] = 'jenis '.(UserFacing::ADJUSTMENT_TYPES[$filters['type']] ?? UserFacing::FEED_ITEM_TYPES[$filters['type']] ?? UserFacing::VENDOR_TYPES[$filters['type']] ?? 'Lainnya');
+            $vendorTypeName = is_numeric($filters['type'])
+                ? DB::table('vendor_types')->where('id', $filters['type'])->value('name')
+                : null;
+            $parts[] = 'jenis '.($vendorTypeName ?? UserFacing::ADJUSTMENT_TYPES[$filters['type']] ?? UserFacing::FEED_ITEM_TYPES[$filters['type']] ?? 'Lainnya');
         }
         if ($filters['status']) {
             $parts[] = 'status '.($filters['status'] === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif');

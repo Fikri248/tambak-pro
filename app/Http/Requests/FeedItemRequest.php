@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\VendorType;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -28,7 +29,9 @@ class FeedItemRequest extends FormRequest
                 Rule::exists('vendors', 'id')->where(
                     fn (Builder $query) => $query
                         ->where('status', 'ACTIVE')
-                        ->whereIn('vendor_type', ['FEED', 'MULTIPLE']),
+                        ->whereIn('vendor_type_id', VendorType::query()
+                            ->select('id')
+                            ->whereIn('semantic_type', [VendorType::SEMANTIC_FEED, VendorType::SEMANTIC_MULTIPLE])),
                 ),
             ],
             'unit' => ['required', 'string', 'max:50'],

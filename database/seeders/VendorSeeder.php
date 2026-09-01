@@ -3,12 +3,14 @@
 namespace Database\Seeders;
 
 use App\Models\Vendor;
+use App\Models\VendorType;
 use Illuminate\Database\Seeder;
 
 class VendorSeeder extends Seeder
 {
     public function run(): void
     {
+        $typeIds = VendorType::query()->pluck('id', 'code');
         $vendors = [
             [
                 'code' => 'VND-001',
@@ -41,6 +43,9 @@ class VendorSeeder extends Seeder
         ];
 
         foreach ($vendors as $vendor) {
+            $vendor['vendor_type_id'] = $typeIds->get($vendor['vendor_type']);
+            unset($vendor['vendor_type']);
+
             Vendor::updateOrCreate(
                 ['code' => $vendor['code']],
                 $vendor + ['phone' => null, 'email' => null, 'status' => 'ACTIVE'],

@@ -1,20 +1,21 @@
 @php
     $isEditing = isset($vendor);
-    $selectedType = old('vendor_type', $vendor->vendor_type ?? 'SEED');
+    $selectedTypeId = old('vendor_type_id', $vendor->vendor_type_id ?? $vendorTypes->firstWhere('code', 'SEED')?->id);
 @endphp
 
-<form method="POST" action="{{ $isEditing ? route('vendors.update', $vendor) : route('vendors.store') }}" class="space-y-6">
+<form method="POST" action="{{ $isEditing ? route('vendors.update', $vendor) : route('vendors.store') }}" class="space-y-6" data-vendor-form>
     @csrf
     @if ($isEditing) @method('PUT') @endif
 
     <div class="grid gap-5 sm:grid-cols-2">
         <x-business-code label="Kode Vendor" :value="$vendor->code ?? null" />
         <x-form.input name="name" label="Nama Vendor" :value="$vendor->name ?? null" placeholder="Contoh: CV Tambak Sejahtera" maxlength="255" required autocomplete="off" />
-        <x-form.select name="vendor_type" label="Jenis Vendor" required>
-            @foreach ($typeLabels as $value => $label)
-                <option value="{{ $value }}" @selected($selectedType === $value)>{{ $label }}</option>
-            @endforeach
-        </x-form.select>
+        <div class="sm:col-span-2">
+            @include('vendors.partials.type-field', [
+                'vendorTypes' => $vendorTypes,
+                'selectedTypeId' => $selectedTypeId,
+            ])
+        </div>
         <x-form.input name="phone" label="Nomor Telepon" type="tel" :value="$vendor->phone ?? null" placeholder="Contoh: 081234567890" maxlength="30" autocomplete="tel" />
         <x-form.input name="email" label="Email" type="email" :value="$vendor->email ?? null" placeholder="Contoh: vendor@example.test" maxlength="255" autocomplete="email" class="sm:col-span-2" />
     </div>

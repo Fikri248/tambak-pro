@@ -67,7 +67,7 @@
                             <option value="">Tanpa Vendor</option>
                             @foreach ($vendors as $vendor)
                                 <option value="{{ $vendor->id }}" data-label="{{ $vendor->name }}" @selected((string) old('vendor_id') === (string) $vendor->id)>
-                                    {{ $vendor->name }} — {{ $vendorTypeLabels[$vendor->vendor_type] }}
+                                    {{ $vendor->name }} — {{ $vendor->vendorType->name }}
                                 </option>
                             @endforeach
                         </x-form.select>

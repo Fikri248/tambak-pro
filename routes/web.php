@@ -16,6 +16,7 @@ use App\Http\Controllers\StockingTransactionController;
 use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\TransactionHistoryController;
 use App\Http\Controllers\VendorController;
+use App\Http\Controllers\VendorTypeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route(auth()->check() ? 'dashboard' : 'login'))
@@ -73,6 +74,12 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/vendor/{vendor}/edit', 'edit')->name('vendors.edit');
         Route::match(['put', 'patch'], '/vendor/{vendor}', 'update')->name('vendors.update');
         Route::patch('/vendor/{vendor}/status', 'status')->name('vendors.status');
+    });
+
+    Route::middleware('access:vendors.manage')->controller(VendorTypeController::class)->group(function () {
+        Route::post('/vendor/types', 'store')->name('vendor-types.store');
+        Route::patch('/vendor/types/{vendorType}', 'update')->name('vendor-types.update');
+        Route::delete('/vendor/types/{vendorType}', 'destroy')->name('vendor-types.destroy');
     });
 
     Route::middleware('access:vendors.view')->controller(VendorController::class)->group(function () {

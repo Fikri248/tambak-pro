@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\VendorType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,11 +26,12 @@ class ReportFilterRequest extends FormRequest
             'vendor_id' => ['nullable', 'integer', 'exists:vendors,id'],
             'feed_item_id' => ['nullable', 'integer', 'exists:feed_items,id'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'type' => ['nullable', Rule::in([
-                'MORTALITY', 'LOSS', 'CORRECTION_IN', 'CORRECTION_OUT', 'OTHER',
-                'FEED', 'NUTRITION', 'MEDICINE',
-                'SEED', 'SERVICE', 'MULTIPLE',
-            ])],
+            'type' => $this->routeIs('reports.vendors*')
+                ? ['nullable', 'integer', 'exists:vendor_types,id']
+                : ['nullable', Rule::in([
+                    'MORTALITY', 'LOSS', 'CORRECTION_IN', 'CORRECTION_OUT', 'OTHER',
+                    'FEED', 'NUTRITION', 'MEDICINE',
+                ])],
             'status' => ['nullable', Rule::in(['ACTIVE', 'INACTIVE'])],
             'category' => ['nullable', 'string', 'max:100'],
             'date_from' => ['nullable', 'date'],
@@ -47,9 +49,15 @@ class ReportFilterRequest extends FormRequest
             $normalized[$field] = $this->filled($field) ? $this->input($field) : null;
         }
 
+        $type = $this->filled('type') ? mb_strtoupper(trim((string) $this->input('type'))) : null;
+
+        if ($type !== null && $this->routeIs('reports.vendors*') && ! ctype_digit($type)) {
+            $type = (string) (VendorType::query()->where('code', $type)->value('id') ?? '');
+        }
+
         $this->merge($normalized + [
             'search' => $this->filled('search') ? trim((string) $this->input('search')) : null,
-            'type' => $this->filled('type') ? mb_strtoupper(trim((string) $this->input('type'))) : null,
+            'type' => $type,
             'status' => $this->filled('status') ? mb_strtoupper(trim((string) $this->input('status'))) : null,
             'category' => $this->filled('category') ? trim((string) $this->input('category')) : null,
             'date_from' => $this->filled('date_from') ? $this->input('date_from') : null,

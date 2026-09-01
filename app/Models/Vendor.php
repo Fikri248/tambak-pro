@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Vendor extends Model
@@ -13,6 +14,7 @@ class Vendor extends Model
     protected $fillable = [
         'code',
         'name',
+        'vendor_type_id',
         'vendor_type',
         'phone',
         'email',
@@ -20,6 +22,31 @@ class Vendor extends Model
         'description',
         'status',
     ];
+
+    public function vendorType(): BelongsTo
+    {
+        return $this->belongsTo(VendorType::class);
+    }
+
+    public function hasVendorSemantic(string ...$semantics): bool
+    {
+        return $this->vendorType?->hasSemantic(...$semantics) === true;
+    }
+
+    /**
+     * Transitional compatibility for existing internal callers that still build
+     * Vendor fixtures using the historical semantic code.
+     */
+    public function setVendorTypeAttribute(?string $semantic): void
+    {
+        if ($semantic === null || $semantic === '') {
+            return;
+        }
+
+        $this->attributes['vendor_type_id'] = VendorType::query()
+            ->where('code', mb_strtoupper($semantic))
+            ->valueOrFail('id');
+    }
 
     public function defaultFeedItems(): HasMany
     {

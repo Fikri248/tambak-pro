@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\FeedItemRequest;
 use App\Models\FeedItem;
 use App\Models\Vendor;
+use App\Models\VendorType;
 use App\Services\BusinessCodeGenerator;
 use App\Support\PageSize;
 use App\Support\UserFacing;
@@ -28,7 +29,7 @@ class FeedItemController extends Controller
             : null;
 
         $feedItems = FeedItem::query()
-            ->with('defaultVendor:id,code,name,vendor_type,status')
+            ->with(['defaultVendor:id,code,name,vendor_type_id,status', 'defaultVendor.vendorType:id,name,semantic_type'])
             ->when($search !== '', function (Builder $query) use ($search): void {
                 $query->where(function (Builder $query) use ($search): void {
                     $query->where('code', 'like', "%{$search}%")
@@ -61,7 +62,6 @@ class FeedItemController extends Controller
     {
         return view('feed-items.create', [
             'typeLabels' => UserFacing::FEED_ITEM_TYPES,
-            'vendorTypeLabels' => UserFacing::VENDOR_TYPES,
             'vendors' => $this->availableVendors(),
         ]);
     }
@@ -87,7 +87,7 @@ class FeedItemController extends Controller
 
     public function show(FeedItem $feedItem): View
     {
-        $feedItem->load('defaultVendor:id,code,name,vendor_type,status');
+        $feedItem->load(['defaultVendor:id,code,name,vendor_type_id,status', 'defaultVendor.vendorType:id,name,semantic_type']);
         $usageCount = $feedItem->feedingTransactions()->count();
         $totalUsage = (float) $feedItem->feedingTransactions()->sum('feed_quantity');
         $totalCost = (float) $feedItem->feedingTransactions()->sum('total_cost');
@@ -115,12 +115,11 @@ class FeedItemController extends Controller
 
     public function edit(FeedItem $feedItem): View
     {
-        $feedItem->load('defaultVendor:id,code,name,vendor_type,status');
+        $feedItem->load(['defaultVendor:id,code,name,vendor_type_id,status', 'defaultVendor.vendorType:id,name,semantic_type']);
 
         return view('feed-items.edit', [
             'feedItem' => $feedItem,
             'typeLabels' => UserFacing::FEED_ITEM_TYPES,
-            'vendorTypeLabels' => UserFacing::VENDOR_TYPES,
             'vendors' => $this->availableVendors($feedItem),
         ]);
     }
@@ -158,10 +157,14 @@ class FeedItemController extends Controller
     private function availableVendors(?FeedItem $feedItem = null): Collection
     {
         return Vendor::query()
+            ->with('vendorType:id,name,semantic_type')
             ->where(function (Builder $query) use ($feedItem): void {
                 $query->where(function (Builder $query): void {
                     $query->where('status', 'ACTIVE')
-                        ->whereIn('vendor_type', ['FEED', 'MULTIPLE']);
+                        ->whereHas('vendorType', fn (Builder $query) => $query->whereIn(
+                            'semantic_type',
+                            [VendorType::SEMANTIC_FEED, VendorType::SEMANTIC_MULTIPLE],
+                        ));
                 });
 
                 if ($feedItem?->default_vendor_id) {
@@ -169,6 +172,6 @@ class FeedItemController extends Controller
                 }
             })
             ->orderBy('name')
-            ->get(['id', 'code', 'name', 'vendor_type', 'status']);
+            ->get(['id', 'code', 'name', 'vendor_type_id', 'status']);
     }
 }
