@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Hash;
 
 class RegisterController extends Controller
 {
+    private const ADMIN_ROLE_DESCRIPTION = 'Administrator master data, transaksi operasional, dan pelaporan tambak.';
+
     public function create(): View
     {
         return view('auth.register');
@@ -24,7 +26,10 @@ class RegisterController extends Controller
         $validated = $request->validated();
 
         $user = DB::transaction(function () use ($validated): User {
-            $adminRole = Role::query()->where('name', 'Admin')->sole();
+            $adminRole = Role::query()->firstOrCreate(
+                ['name' => 'Admin'],
+                ['description' => self::ADMIN_ROLE_DESCRIPTION],
+            );
 
             return User::query()->create([
                 'role_id' => $adminRole->id,
