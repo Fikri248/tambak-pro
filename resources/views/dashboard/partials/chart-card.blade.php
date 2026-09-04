@@ -22,7 +22,11 @@
             @else
                 @foreach ($chart['labels'] as $index => $label)
                     @if (($chart['values'][$index] ?? 0) > 0)
-                        {{ $label }} {{ number_format((float) $chart['values'][$index], 3, ',', '.') }}.
+                        @if ($chart['format'] === 'currency')
+                            {{ $label }} Rp{{ \App\Support\DecimalDisplay::localized((string) $chart['values'][$index], '0') }}.
+                        @else
+                            {{ $label }} {{ number_format((float) $chart['values'][$index], 3, ',', '.') }}.
+                        @endif
                     @endif
                 @endforeach
             @endif

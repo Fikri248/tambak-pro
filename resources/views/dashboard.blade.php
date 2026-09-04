@@ -36,7 +36,7 @@
                 <div class="min-w-0 flex-1">
                     <h2 class="text-base font-semibold text-neutral-950">Analitik &amp; Aktivitas</h2>
                     <p class="mt-1 text-xs leading-5 text-neutral-500">
-                        Periode hanya memengaruhi tren, aktivitas, dan aktivitas terakhir. Stok saat ini tetap menggunakan posisi stok terkini. Empat KPI utama tetap global.
+                        Periode memengaruhi tren, aktivitas, dan aktivitas terakhir. Filter Tambak hanya memengaruhi data yang memiliki keterkaitan lokasi. Stok saat ini tetap menggunakan posisi terkini dan empat KPI utama tetap global.
                     </p>
                 </div>
                 <form method="GET" action="{{ route('dashboard') }}" class="flex shrink-0 sm:justify-end">
@@ -117,19 +117,19 @@
                 ])
 
                 @include('dashboard.partials.chart-card', [
-                    'title' => 'Tren Biaya Penggunaan Barang/Item',
-                    'description' => 'Biaya penggunaan Barang/Item yang tercatat.',
-                    'chart' => $charts['feedingCostTrend'],
-                    'chartKey' => 'feedingCostTrend',
-                    'reportUrl' => route('reports.feeding', $dateFilters),
+                    'title' => 'Tren Biaya Pembelian Barang/Item',
+                    'description' => 'Total biaya pembelian berdasarkan periode, tidak dipengaruhi filter Tambak.',
+                    'chart' => $charts['purchaseCostTrend'],
+                    'chartKey' => 'purchaseCostTrend',
+                    'reportUrl' => route('reports.purchases', $dateFilters),
                     'reportLabel' => 'Lihat laporan',
                     'emptyTitle' => 'Belum ada data pada periode ini',
-                    'emptyDescription' => 'Tidak ada penggunaan Barang/Item yang sesuai.',
+                    'emptyDescription' => 'Tidak ada pembelian Barang/Item yang sesuai.',
                 ])
 
                 @include('dashboard.partials.chart-card', [
                     'title' => 'Aktivitas Transaksi',
-                    'description' => 'Jumlah Pembibitan, Pemindahan, Perubahan Jumlah, dan Penggunaan Barang/Item.',
+                    'description' => 'Jumlah Pembibitan, Pemindahan, Perubahan Jumlah, dan Pembelian Barang/Item. Pembelian mengikuti periode dan tidak dipengaruhi filter Tambak.',
                     'chart' => $charts['transactionActivity'],
                     'chartKey' => 'transactionActivity',
                     'reportUrl' => route('history.index', $dateFilters),

@@ -317,7 +317,7 @@ Urutan menu berikut sesuai dengan Sidebar saat ini.
 
 ### Dashboard
 
-Menampilkan KPI utama, posisi stok terkini, grafik berdasarkan Tambak dan komoditas, tren pembibitan/kematian/biaya penggunaan Barang/Item, aktivitas transaksi, serta AuditLog terbaru. Filter periode hanya memengaruhi data historis dan aktivitas; stok saat ini tetap memakai posisi `pond_stocks` terkini.
+Menampilkan KPI utama, posisi stok terkini, grafik berdasarkan Tambak dan komoditas, tren pembibitan/kematian/biaya pembelian Barang/Item, aktivitas transaksi, serta AuditLog terbaru. Tren biaya pembelian memakai `SUM(item_purchase_transactions.total_cost)` berdasarkan `transaction_date`. Grafik Aktivitas Transaksi membandingkan hitungan Pembibitan, Pemindahan, Perubahan Jumlah, dan Pembelian Barang/Item; seri pembelian memakai `COUNT(item_purchase_transactions.id)`. Filter periode memengaruhi data historis dan aktivitas; filter Tambak hanya memengaruhi analitik yang memiliki hubungan lokasi, sedangkan biaya dan aktivitas pembelian tetap mencakup seluruh pembelian pada periode terpilih. Stok saat ini tetap memakai posisi `pond_stocks` terkini.
 
 ### Tambak
 

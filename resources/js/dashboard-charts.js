@@ -5,7 +5,8 @@ const numberFormatter = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
 });
 
 const parseChartData = () => {
@@ -123,7 +124,7 @@ const lineConfig = (data, key) => {
     const lineStyles = {
         stockingTrend: { color: '#171717', dash: [] },
         mortalityTrend: { color: '#525252', dash: [7, 4] },
-        feedingCostTrend: { color: '#737373', dash: [] },
+        purchaseCostTrend: { color: '#737373', dash: [] },
     };
     const style = lineStyles[key] || lineStyles.stockingTrend;
 

@@ -36,12 +36,12 @@ class DashboardAnalyticsService
             $tambakId,
             fn (Builder $query): Builder => $query->where('sa.adjustment_type', 'MORTALITY'),
         );
-        $feedingCost = $this->historicalTotals(
-            'feeding_transactions',
-            'ft',
-            'SUM(ft.total_cost)',
+        $purchaseCost = $this->historicalTotals(
+            'item_purchase_transactions',
+            'ipt',
+            'SUM(ipt.total_cost)',
             $range,
-            $tambakId,
+            null,
         );
 
         return [
@@ -60,7 +60,7 @@ class DashboardAnalyticsService
                 'stockByCommodity' => $this->stockByCommodity($tambakId),
                 'stockingTrend' => $this->singleSeries($buckets, $stocking, 'Bibit masuk', 'quantity'),
                 'mortalityTrend' => $this->singleSeries($buckets, $mortality, 'Kematian', 'quantity'),
-                'feedingCostTrend' => $this->singleSeries($buckets, $feedingCost, 'Biaya', 'currency'),
+                'purchaseCostTrend' => $this->singleSeries($buckets, $purchaseCost, 'Biaya pembelian', 'currency'),
                 'transactionActivity' => $this->transactionActivity($buckets, $range, $tambakId),
             ],
             'petakSummary' => $this->petakSummary($range, $tambakId),
@@ -239,11 +239,12 @@ class DashboardAnalyticsService
             ['label' => 'Pembibitan', 'table' => 'stocking_transactions', 'alias' => 'st'],
             ['label' => 'Pemindahan', 'table' => 'stock_movements', 'alias' => 'sm'],
             ['label' => 'Perubahan Jumlah', 'table' => 'stock_adjustments', 'alias' => 'sa'],
-            ['label' => 'Penggunaan Barang/Item', 'table' => 'feeding_transactions', 'alias' => 'ft'],
+            ['label' => 'Pembelian Barang/Item', 'table' => 'item_purchase_transactions', 'alias' => 'ipt', 'locationScoped' => false],
         ];
         $datasets = [];
 
         foreach ($definitions as $definition) {
+            $activityTambakId = ($definition['locationScoped'] ?? true) ? $tambakId : null;
             $daily = $definition['alias'] === 'sm'
                 ? $this->movementCounts($range, $tambakId)
                 : $this->historicalTotals(
@@ -251,7 +252,7 @@ class DashboardAnalyticsService
                     $definition['alias'],
                     "COUNT({$definition['alias']}.id)",
                     $range,
-                    $tambakId,
+                    $activityTambakId,
                 );
             $normalized = $this->normalizeDailyValues($buckets, $daily);
             $datasets[] = [
