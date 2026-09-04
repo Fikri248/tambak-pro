@@ -19,7 +19,7 @@ class TransactionHistoryRequest extends FormRequest
     {
         return [
             'search' => ['nullable', 'string', 'max:255'],
-            'type' => ['nullable', Rule::in(['STOCKING', 'MOVEMENT', 'ADJUSTMENT', 'FEEDING'])],
+            'type' => ['nullable', Rule::in(['STOCKING', 'MOVEMENT', 'ADJUSTMENT', 'PURCHASE', 'FEEDING'])],
             'location_id' => ['nullable', 'integer', 'exists:locations,id'],
             'commodity_id' => ['nullable', 'integer', 'exists:commodities,id'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],

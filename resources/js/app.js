@@ -7,6 +7,7 @@ import { initializeDashboardCharts } from './dashboard-charts';
 import { initializeFilterControls } from './filter-controls';
 import { initializePageSizeControls } from './page-size';
 import { initializeVendorTypeLookups } from './vendor-type-lookups';
+import { initializeItemTypeLookups } from './item-type-lookups';
 
 const initializeSidebar = () => {
     const sidebar = document.querySelector('[data-sidebar]');
@@ -647,14 +648,43 @@ const initializeFeedingForm = () => {
     updatePreview();
 };
 
+const initializePurchaseForm = () => {
+    const form = document.querySelector('[data-purchase-form]:not([data-purchase-form-ready])');
+    if (!form) return;
+    form.dataset.purchaseFormReady = 'true';
+    const item = form.querySelector('[data-purchase-item]');
+    const vendor = form.querySelector('[data-purchase-vendor]');
+    const quantity = form.querySelector('[data-purchase-quantity]');
+    const cost = form.querySelector('[data-purchase-cost]');
+    const total = form.querySelector('[data-purchase-total]');
+    const update = () => {
+        const value = Math.max(Number.parseFloat(quantity?.value || '0'), 0) * Math.max(Number.parseFloat(cost?.value || '0'), 0);
+        if (total) total.textContent = `Rp${new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 }).format(value)}`;
+    };
+    item?.addEventListener('change', () => {
+        const option = item.options[item.selectedIndex];
+        if (cost && !cost.value) cost.value = option?.dataset.price || '';
+        if (vendor && !vendor.value && option?.dataset.vendor) {
+            vendor.value = option.dataset.vendor;
+            vendor.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        update();
+    });
+    quantity?.addEventListener('input', update);
+    cost?.addEventListener('input', update);
+    update();
+};
+
 const initializeDynamicContent = () => {
     initializeChartOfAccountLookups();
     initializeVendorTypeLookups();
+    initializeItemTypeLookups();
     initializePasswordVisibility();
     initializeStockingForm();
     initializeMovementForm();
     initializeAdjustmentForm();
     initializeFeedingForm();
+    initializePurchaseForm();
     initializeFilterControls();
 };
 

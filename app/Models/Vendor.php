@@ -62,4 +62,9 @@ class Vendor extends Model
     {
         return $this->hasMany(FeedingTransaction::class);
     }
+
+    public function itemPurchaseTransactions(): HasMany
+    {
+        return $this->hasMany(ItemPurchaseTransaction::class);
+    }
 }

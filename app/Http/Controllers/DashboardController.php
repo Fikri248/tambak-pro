@@ -41,7 +41,8 @@ class DashboardController extends Controller
                 'STOCKING_TRANSACTION' => 'Pembibitan',
                 'STOCK_ADJUSTMENT' => 'Penyesuaian stok',
                 'STOCK_MOVEMENT' => 'Pemindahan Stok',
-                'FEEDING_TRANSACTION' => 'Pemberian pakan',
+                'FEEDING_TRANSACTION' => 'Penggunaan Barang/Item',
+                'ITEM_PURCHASE_TRANSACTION' => 'Pembelian Barang/Item',
             ],
         ]);
     }

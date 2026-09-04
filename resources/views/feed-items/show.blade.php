@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Detail Kebutuhan · '.$feedItem->name">
+<x-layouts.app :title="'Detail Barang/Item · '.$feedItem->name">
     @php
         $formatQuantity = fn (float $value): string => number_format($value, floor($value) === $value ? 0 : 3, ',', '.');
     @endphp
@@ -7,7 +7,7 @@
         <div>
             <a href="{{ route('feed-items.index') }}" class="mb-4 inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900">
                 <x-icon name="arrow-left" class="size-4" />
-                Pakan, Nutrisi & Obat
+                Barang/Item
             </a>
 
             <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -16,14 +16,14 @@
                         <h1 class="text-2xl font-semibold tracking-tight text-neutral-950 sm:text-[26px]">{{ $feedItem->name }}</h1>
                         <x-badge>{{ $feedItem->status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif' }}</x-badge>
                     </div>
-                    <p class="mt-1 text-sm text-neutral-500">{{ $feedItem->code }} · {{ $typeLabels[$feedItem->item_type] }}</p>
+                    <p class="mt-1 text-sm text-neutral-500">{{ $feedItem->code }} · {{ $feedItem->itemType->name }}</p>
                 </div>
 
                 @if (auth()->user()->canAccess('feed-items.manage'))
                     <div class="flex flex-wrap gap-2">
                         <x-button variant="secondary" :href="route('feed-items.edit', $feedItem)" data-crud-modal data-crud-modal-size="xl">
                             <x-icon name="edit" class="size-4" />
-                            Edit Kebutuhan
+                            Edit Barang/Item
                         </x-button>
                         <form method="POST" action="{{ route('feed-items.status', $feedItem) }}" data-confirm="{{ $feedItem->status === 'ACTIVE' ? 'Nonaktifkan kebutuhan ini?' : 'Aktifkan kebutuhan ini?' }}" data-confirm-title="{{ $feedItem->status === 'ACTIVE' ? 'Nonaktifkan Kebutuhan' : 'Aktifkan Kebutuhan' }}" data-confirm-action="{{ $feedItem->status === 'ACTIVE' ? 'Nonaktifkan' : 'Aktifkan' }}">
                             @csrf
@@ -48,11 +48,11 @@
         </section>
 
         <x-card>
-            <h2 class="text-base font-semibold text-neutral-950">Informasi Kebutuhan</h2>
+            <h2 class="text-base font-semibold text-neutral-950">Informasi Barang/Item</h2>
             <dl class="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
                 <div><dt class="text-xs text-neutral-500">Kode</dt><dd class="mt-1 font-mono text-sm font-medium text-neutral-900">{{ $feedItem->code }}</dd></div>
                 <div><dt class="text-xs text-neutral-500">Nama</dt><dd class="mt-1 text-sm font-medium text-neutral-900">{{ $feedItem->name }}</dd></div>
-                <div><dt class="text-xs text-neutral-500">Jenis</dt><dd class="mt-1 text-sm font-medium text-neutral-900">{{ $typeLabels[$feedItem->item_type] }}</dd></div>
+                <div><dt class="text-xs text-neutral-500">Jenis Barang/Item</dt><dd class="mt-1 text-sm font-medium text-neutral-900">{{ $feedItem->itemType->name }}</dd></div>
                 <div><dt class="text-xs text-neutral-500">Satuan</dt><dd class="mt-1 text-sm font-medium text-neutral-900">{{ $feedItem->unit }}</dd></div>
                 <div class="sm:col-span-2"><dt class="text-xs text-neutral-500">Vendor Utama</dt><dd class="mt-1 text-sm text-neutral-800">{{ $feedItem->defaultVendor?->name ?? 'Tanpa Vendor utama' }}@if ($feedItem->defaultVendor?->status === 'INACTIVE') <span class="text-neutral-500">(Tidak aktif)</span>@endif</dd></div>
                 <div><dt class="text-xs text-neutral-500">Harga Acuan per Satuan</dt><dd class="mt-1 text-sm font-medium tabular-nums text-neutral-900">Rp{{ number_format((float) $feedItem->default_price, 0, ',', '.') }}</dd></div>
@@ -65,9 +65,9 @@
             </dl>
         </x-card>
 
-        <x-table-wrapper title="Penggunaan Terbaru" description="Riwayat pemakaian kebutuhan ini dari transaksi pemberian pakan yang sudah tercatat.">
+        <x-table-wrapper title="Penggunaan Terbaru" description="Riwayat pemakaian Barang/Item dari transaksi penggunaan yang sudah tercatat.">
             @if ($recentTransactions->isEmpty())
-                <x-empty-state title="Belum ada riwayat penggunaan" description="Kebutuhan ini belum pernah digunakan pada transaksi pakan, nutrisi, atau obat." icon="history" />
+                <x-empty-state title="Belum ada riwayat penggunaan" description="Barang/Item ini belum pernah digunakan." icon="history" />
             @else
                 <table class="w-full min-w-[920px] text-left">
                     <thead>

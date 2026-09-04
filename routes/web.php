@@ -9,6 +9,8 @@ use App\Http\Controllers\CommodityController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FeedingTransactionController;
 use App\Http\Controllers\FeedItemController;
+use App\Http\Controllers\ItemPurchaseTransactionController;
+use App\Http\Controllers\ItemTypeController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StockAdjustmentController;
@@ -93,6 +95,12 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/pakan/{feedItem}/edit', 'edit')->name('feed-items.edit');
         Route::match(['put', 'patch'], '/pakan/{feedItem}', 'update')->name('feed-items.update');
         Route::patch('/pakan/{feedItem}/status', 'status')->name('feed-items.status');
+    });
+
+    Route::middleware('access:feed-items.manage')->controller(ItemTypeController::class)->group(function () {
+        Route::post('/barang-item/types', 'store')->name('item-types.store');
+        Route::patch('/barang-item/types/{itemType}', 'update')->name('item-types.update');
+        Route::delete('/barang-item/types/{itemType}', 'destroy')->name('item-types.destroy');
     });
 
     Route::middleware('access:feed-items.view')->controller(FeedItemController::class)->group(function () {
@@ -183,6 +191,24 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::middleware('access:feeding.create')->controller(FeedingTransactionController::class)->group(function () {
         Route::get('/pemberian-pakan/create', 'create')->name('feeding.create');
         Route::post('/pemberian-pakan', 'store')->name('feeding.store');
+    });
+
+    Route::middleware('access:item-purchases.create')->controller(ItemPurchaseTransactionController::class)->group(function () {
+        Route::get('/pembelian-barang-item/create', 'create')->name('item-purchases.create');
+        Route::post('/pembelian-barang-item', 'store')->name('item-purchases.store');
+    });
+
+    Route::middleware('access:item-purchases.update')->controller(ItemPurchaseTransactionController::class)->group(function () {
+        Route::get('/pembelian-barang-item/{itemPurchase}/edit', 'edit')->name('item-purchases.edit');
+        Route::match(['put', 'patch'], '/pembelian-barang-item/{itemPurchase}', 'update')->name('item-purchases.update');
+    });
+
+    Route::delete('/pembelian-barang-item/{itemPurchase}', [ItemPurchaseTransactionController::class, 'destroy'])
+        ->middleware('access:item-purchases.delete')->name('item-purchases.destroy');
+
+    Route::middleware('access:item-purchases.view')->controller(ItemPurchaseTransactionController::class)->group(function () {
+        Route::get('/pembelian-barang-item', 'index')->name('item-purchases.index');
+        Route::get('/pembelian-barang-item/{itemPurchase}', 'show')->name('item-purchases.show');
     });
 
     Route::middleware('access:feeding.update')->controller(FeedingTransactionController::class)->group(function () {

@@ -117,19 +117,19 @@
                 ])
 
                 @include('dashboard.partials.chart-card', [
-                    'title' => 'Tren Biaya Pakan, Nutrisi & Obat',
-                    'description' => 'Biaya penggunaan pakan, nutrisi, obat, dan kebutuhan budidaya lain yang tercatat.',
+                    'title' => 'Tren Biaya Penggunaan Barang/Item',
+                    'description' => 'Biaya penggunaan Barang/Item yang tercatat.',
                     'chart' => $charts['feedingCostTrend'],
                     'chartKey' => 'feedingCostTrend',
                     'reportUrl' => route('reports.feeding', $dateFilters),
                     'reportLabel' => 'Lihat laporan',
                     'emptyTitle' => 'Belum ada data pada periode ini',
-                    'emptyDescription' => 'Tidak ada penggunaan pakan, nutrisi, obat, atau kebutuhan operasional yang sesuai.',
+                    'emptyDescription' => 'Tidak ada penggunaan Barang/Item yang sesuai.',
                 ])
 
                 @include('dashboard.partials.chart-card', [
                     'title' => 'Aktivitas Transaksi',
-                    'description' => 'Jumlah Pembibitan, Pemindahan, Perubahan Jumlah, dan Pemberian Pakan.',
+                    'description' => 'Jumlah Pembibitan, Pemindahan, Perubahan Jumlah, dan Penggunaan Barang/Item.',
                     'chart' => $charts['transactionActivity'],
                     'chartKey' => 'transactionActivity',
                     'reportUrl' => route('history.index', $dateFilters),

@@ -38,7 +38,7 @@
 
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Ringkasan {{ $vendor->name }}">
             <x-kpi-card label="Batch" :value="number_format($vendor->commodity_batches_count, 0, ',', '.')" icon="seedling" />
-            <x-kpi-card label="Pakan, Nutrisi & Obat" :value="number_format($vendor->default_feed_items_count, 0, ',', '.')" icon="feed" />
+            <x-kpi-card label="Barang/Item" :value="number_format($vendor->default_feed_items_count, 0, ',', '.')" icon="feed" />
             <x-kpi-card label="Transaksi Terkait" :value="number_format($vendor->feeding_transactions_count, 0, ',', '.')" icon="history" />
             <x-kpi-card label="Status" :value="$vendor->status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif'" icon="check" />
         </section>
@@ -115,9 +115,9 @@
             @endif
         </x-table-wrapper>
 
-        <x-table-wrapper title="Pakan, Nutrisi & Obat Terkait" description="Maksimal 12 kebutuhan yang menggunakan Vendor ini sebagai Vendor utama.">
+        <x-table-wrapper title="Barang/Item Terkait" description="Maksimal 12 Barang/Item yang menggunakan Vendor ini sebagai Vendor utama.">
             @if ($relatedFeedItems->isEmpty())
-                <x-empty-state title="Belum ada kebutuhan terkait" description="Vendor ini belum digunakan sebagai Vendor utama pakan, nutrisi, obat, atau kebutuhan lainnya." icon="feed" />
+                <x-empty-state title="Belum ada Barang/Item terkait" description="Vendor ini belum digunakan sebagai Vendor utama Barang/Item." icon="feed" />
             @else
                 <table class="w-full min-w-[700px] text-left">
                     <thead>
@@ -135,7 +135,7 @@
                             <tr class="transition-colors hover:bg-neutral-50/70">
                                 <td class="px-5 py-3.5 font-mono text-xs text-neutral-600 sm:px-6">{{ $item->code }}</td>
                                 <td class="px-5 py-3.5 font-medium text-neutral-900">{{ $item->name }}</td>
-                                <td class="px-5 py-3.5 text-center"><x-badge>{{ $itemTypeLabels[$item->item_type] ?? 'Lainnya' }}</x-badge></td>
+                                <td class="px-5 py-3.5 text-center"><x-badge>{{ $item->itemType->name }}</x-badge></td>
                                 <td class="px-5 py-3.5 text-center text-neutral-600">{{ $item->unit }}</td>
                                 <td class="px-5 py-3.5 text-right tabular-nums text-neutral-700">Rp{{ number_format((float) $item->default_price, 0, ',', '.') }}</td>
                                 <td class="px-5 py-3.5 pr-6 text-center"><x-badge>{{ $item->status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif' }}</x-badge></td>
@@ -149,10 +149,10 @@
         <x-card :padding="false">
             <div class="border-b border-neutral-200 px-5 py-4 sm:px-6">
                 <h2 class="text-base font-semibold text-neutral-950">Penggunaan Operasional Terbaru</h2>
-                <p class="mt-1 text-xs text-neutral-500">Maksimal enam transaksi pemberian pakan terbaru yang menggunakan Vendor ini.</p>
+                <p class="mt-1 text-xs text-neutral-500">Maksimal enam transaksi penggunaan Barang/Item terbaru yang menggunakan Vendor ini.</p>
             </div>
             @if ($recentTransactions->isEmpty())
-                <x-empty-state title="Belum ada transaksi terkait" description="Transaksi pemberian pakan yang terkait akan tampil di bagian ini." icon="history" />
+                <x-empty-state title="Belum ada transaksi terkait" description="Transaksi penggunaan Barang/Item yang terkait akan tampil di bagian ini." icon="history" />
             @else
                 <ol class="divide-y divide-neutral-100">
                     @foreach ($recentTransactions as $transaction)

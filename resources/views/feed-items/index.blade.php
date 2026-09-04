@@ -1,11 +1,11 @@
-<x-layouts.app title="Pakan, Nutrisi & Obat">
+<x-layouts.app title="Barang/Item">
     <div class="space-y-6">
-        <x-page-header title="Pakan, Nutrisi & Obat" description="Kelola pakan, nutrisi, obat, dan kebutuhan budidaya.">
+        <x-page-header title="Barang/Item" description="Kelola Barang/Item untuk kebutuhan operasional budidaya.">
             @if (auth()->user()->canAccess('feed-items.manage'))
                 <x-slot:actions>
                     <x-button :href="route('feed-items.create')" data-crud-modal data-crud-modal-size="xl">
                         <x-icon name="plus" class="size-4" />
-                        Tambah Kebutuhan
+                        Tambah Barang/Item
                     </x-button>
                 </x-slot:actions>
             @endif
@@ -13,9 +13,9 @@
 
         <x-flash-message />
 
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Ringkasan pakan dan nutrisi">
-            <x-kpi-card label="Total Kebutuhan" :value="number_format($summary['total'], 0, ',', '.')" icon="feed" />
-            <x-kpi-card label="Kebutuhan Aktif" :value="number_format($summary['active'], 0, ',', '.')" icon="check" />
+        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Ringkasan Barang/Item">
+            <x-kpi-card label="Total Barang/Item" :value="number_format($summary['total'], 0, ',', '.')" icon="feed" />
+            <x-kpi-card label="Barang/Item Aktif" :value="number_format($summary['active'], 0, ',', '.')" icon="check" />
             <x-kpi-card label="Pakan" :value="number_format($summary['feed'], 0, ',', '.')" icon="package" />
             <x-kpi-card label="Nutrisi & Obat" :value="number_format($summary['nutritionMedicine'], 0, ',', '.')" icon="adjustment" />
         </section>
@@ -26,15 +26,15 @@
         <x-card>
             <form method="GET" action="{{ route('feed-items.index') }}" class="flex flex-col gap-3 lg:flex-row lg:items-start">
                 <div class="min-w-0 flex-1">
-                    <label for="search" class="sr-only">Cari pakan atau nutrisi</label>
+                    <label for="search" class="sr-only">Cari Barang/Item</label>
                     <div class="relative">
                         <x-icon name="search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
-                        <input id="search" name="search" type="search" value="{{ $filters['search'] }}" placeholder="Cari pakan atau nutrisi..." class="h-10 w-full rounded-lg border border-neutral-200 bg-white pl-9 pr-3 text-sm placeholder:text-neutral-400 hover:border-neutral-300">
+                        <input id="search" name="search" type="search" value="{{ $filters['search'] }}" placeholder="Cari Barang/Item..." class="h-10 w-full rounded-lg border border-neutral-200 bg-white pl-9 pr-3 text-sm placeholder:text-neutral-400 hover:border-neutral-300">
                     </div>
                 </div>
                 <x-filters.panel id="feed-item-filters" :active-count="$feedItemFilterCount" class="w-full lg:w-auto lg:shrink-0">
                     <div class="grid gap-4 sm:grid-cols-2">
-                        <x-filters.select name="type" label="Jenis Kebutuhan" :options="$typeLabels" :value="$filters['type']" placeholder="Semua Jenis" />
+                        <x-filters.select name="type" label="Jenis Barang/Item" :options="$typeLabels" :value="$filters['type']" placeholder="Semua Jenis" />
                         <x-filters.select name="status" label="Status" :options="['ACTIVE' => 'Aktif', 'INACTIVE' => 'Tidak Aktif']" :value="$filters['status']" placeholder="Semua Status" />
                     </div>
                     <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -49,11 +49,11 @@
         </x-card>
 
         <div>
-            <x-table-wrapper title="Daftar Pakan, Nutrisi & Obat" description="Kebutuhan yang dapat digunakan pada aktivitas budidaya.">
+            <x-table-wrapper title="Daftar Barang/Item" description="Barang/Item yang dapat digunakan pada aktivitas budidaya.">
                 @if ($feedItems->isEmpty())
-                    <x-empty-state title="Belum ada data pakan, nutrisi, atau obat" description="Tambahkan kebutuhan untuk mulai mencatat pemakaian budidaya." icon="feed">
+                    <x-empty-state title="Belum ada Barang/Item" description="Tambahkan Barang/Item untuk mulai mencatat aktivitas budidaya." icon="feed">
                         @if (auth()->user()->canAccess('feed-items.manage'))
-                            <x-button :href="route('feed-items.create')" data-crud-modal data-crud-modal-size="xl">Tambah Kebutuhan</x-button>
+                            <x-button :href="route('feed-items.create')" data-crud-modal data-crud-modal-size="xl">Tambah Barang/Item</x-button>
                         @endif
                     </x-empty-state>
                 @else
@@ -80,7 +80,7 @@
                                             <p class="mt-0.5 max-w-[230px] truncate text-xs text-neutral-500">{{ $feedItem->description }}</p>
                                         @endif
                                     </td>
-                                    <td class="px-5 py-3.5 text-center"><x-badge>{{ $typeLabels[$feedItem->item_type] }}</x-badge></td>
+                                    <td class="px-5 py-3.5 text-center"><x-badge>{{ $feedItem->itemType->name }}</x-badge></td>
                                     <td class="px-5 py-3.5 text-sm text-neutral-600">
                                         @if ($feedItem->defaultVendor)
                                             <span>{{ $feedItem->defaultVendor->name }}</span>

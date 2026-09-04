@@ -28,7 +28,7 @@ class FeedingTransactionSeeder extends Seeder
                 'feed_quantity' => 5,
                 'unit_cost' => 20000,
                 'total_cost' => 100000,
-                'notes' => 'Pemberian pakan starter untuk BT-001 sebelum pemindahan stok.',
+                'notes' => 'Penggunaan Barang/Item starter untuk BT-001 sebelum pemindahan stok.',
             ],
             [
                 'transaction_number' => 'FED-20260806-001',
@@ -40,7 +40,7 @@ class FeedingTransactionSeeder extends Seeder
                 'feed_quantity' => 4,
                 'unit_cost' => 20000,
                 'total_cost' => 80000,
-                'notes' => 'Pemberian pakan starter untuk BT-002.',
+                'notes' => 'Penggunaan Barang/Item starter untuk BT-002.',
             ],
             [
                 'transaction_number' => 'FED-20260808-001',
@@ -52,7 +52,7 @@ class FeedingTransactionSeeder extends Seeder
                 'feed_quantity' => 6,
                 'unit_cost' => 20000,
                 'total_cost' => 120000,
-                'notes' => 'Pemberian pakan starter untuk BT-003.',
+                'notes' => 'Penggunaan Barang/Item starter untuk BT-003.',
             ],
             [
                 'transaction_number' => 'FED-20260811-001',
@@ -64,7 +64,7 @@ class FeedingTransactionSeeder extends Seeder
                 'feed_quantity' => 4,
                 'unit_cost' => 25000,
                 'total_cost' => 100000,
-                'notes' => 'Pemberian pakan grower setelah BT-001 dipindahkan ke Petak B1.',
+                'notes' => 'Penggunaan Barang/Item grower setelah BT-001 dipindahkan ke Petak B1.',
             ],
         ];
 

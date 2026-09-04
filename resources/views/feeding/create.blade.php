@@ -1,18 +1,18 @@
-<x-layouts.app title="Tambah Pemberian Pakan">
+<x-layouts.app title="Tambah Penggunaan Barang/Item">
     <div class="mx-auto max-w-5xl space-y-6">
         <div>
             <a href="{{ route('feeding.index') }}" class="mb-4 inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900">
                 <x-icon name="arrow-left" class="size-4" />
-                Pemberian Pakan
+                Penggunaan Barang/Item
             </a>
-            <x-page-header title="Tambah Pemberian Pakan" description="Catat penggunaan pakan, nutrisi, atau obat pada petak budidaya." />
+            <x-page-header title="Tambah Penggunaan Barang/Item" description="Catat penggunaan Barang/Item pada petak budidaya." />
         </div>
 
         <x-flash-message />
 
         @if ($locations->isEmpty() || $feedItems->isEmpty())
             <x-card>
-                <x-empty-state title="Data operasional belum tersedia" description="Diperlukan petak dengan stok positif dan minimal satu pakan, nutrisi, atau obat aktif untuk mencatat pemberian." icon="feed" />
+                <x-empty-state title="Data operasional belum tersedia" description="Diperlukan petak dengan stok positif dan minimal satu Barang/Item aktif." icon="feed" />
             </x-card>
         @else
             <form
@@ -54,11 +54,11 @@
                             <p class="mt-1 text-xs text-neutral-500">Perkiraan awal; stok saat pencatatan dihitung kembali setelah data stok dikunci.</p>
                         </div>
 
-                        <x-form.select name="feed_item_id" label="Pakan, Nutrisi, atau Obat" required data-feeding-item>
+                        <x-form.select name="feed_item_id" label="Barang/Item" required data-feeding-item>
                             <option value="">Pilih kebutuhan</option>
                             @foreach ($feedItems as $feedItem)
                                 <option value="{{ $feedItem->id }}" data-label="{{ $feedItem->name }}" @selected((string) old('feed_item_id') === (string) $feedItem->id)>
-                                    {{ $feedItem->code }} — {{ $feedItem->name }} — {{ $typeLabels[$feedItem->item_type] }}
+                                    {{ $feedItem->code }} — {{ $feedItem->name }} — {{ $feedItem->itemType->name }}
                                 </option>
                             @endforeach
                         </x-form.select>

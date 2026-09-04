@@ -9,12 +9,12 @@ use App\Models\AuditLog;
 use App\Models\CommodityBatch;
 use App\Models\FeedingTransaction;
 use App\Models\FeedItem;
+use App\Models\ItemType;
 use App\Models\Location;
 use App\Models\PondStock;
 use App\Models\Vendor;
 use App\Models\VendorType;
 use App\Support\PageSize;
-use App\Support\UserFacing;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -35,9 +35,8 @@ class FeedingTransactionController extends Controller
     public function index(TransactionIndexFilterRequest $request): View
     {
         $search = mb_substr(trim((string) $request->query('search')), 0, 255);
-        $type = in_array($request->query('type'), array_keys(UserFacing::FEED_ITEM_TYPES), true)
-            ? $request->query('type')
-            : null;
+        $typeInput = trim((string) $request->query('type'));
+        $type = $typeInput !== '' ? ItemType::query()->whereKey($typeInput)->orWhere('code', mb_strtoupper($typeInput))->value('id') : null;
         $locationId = $this->validPositiveId($request->query('location_id'));
         $feedItemId = $this->validPositiveId($request->query('feed_item_id'));
         $dateFrom = $request->validated('date_from');
@@ -48,7 +47,8 @@ class FeedingTransactionController extends Controller
                 'location:id,code,name',
                 'batch:id,batch_code,commodity_id',
                 'batch.commodity:id,code,name',
-                'feedItem:id,code,name,item_type,unit',
+                'feedItem:id,code,name,item_type_id,unit',
+                'feedItem.itemType:id,name,semantic_type',
                 'vendor:id,code,name',
             ])
             ->when($search !== '', function (Builder $query) use ($search): void {
@@ -66,9 +66,9 @@ class FeedingTransactionController extends Controller
                         ->orWhereHas('createdBy', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"));
                 });
             })
-            ->when($type, fn (Builder $query, string $type) => $query->whereHas(
+            ->when($type, fn (Builder $query, int $type) => $query->whereHas(
                 'feedItem',
-                fn (Builder $query) => $query->where('item_type', $type),
+                fn (Builder $query) => $query->where('item_type_id', $type),
             ))
             ->when($locationId, fn (Builder $query, int $id) => $query->where('location_id', $id))
             ->when($feedItemId, fn (Builder $query, int $id) => $query->where('feed_item_id', $id))
@@ -83,7 +83,7 @@ class FeedingTransactionController extends Controller
 
         return view('feeding.index', [
             'transactions' => $transactions,
-            'typeLabels' => UserFacing::FEED_ITEM_TYPES,
+            'typeLabels' => ItemType::query()->orderBy('name')->pluck('name', 'id')->all(),
             'locations' => Location::query()->where('location_type', 'PETAK')->orderBy('name')->get(['id', 'code', 'name']),
             'feedItems' => FeedItem::query()->orderBy('name')->get(['id', 'code', 'name']),
             'filters' => compact('search', 'type', 'locationId', 'feedItemId', 'dateFrom', 'dateTo'),
@@ -138,22 +138,22 @@ class FeedingTransactionController extends Controller
             })
             ->all();
         $feedItems = FeedItem::query()
-            ->with(['defaultVendor:id,status,vendor_type_id', 'defaultVendor.vendorType:id,name,semantic_type'])
+            ->with(['itemType:id,name,semantic_type', 'defaultVendor:id,status,vendor_type_id', 'defaultVendor.vendorType:id,name,semantic_type'])
             ->where('status', 'ACTIVE')
             ->orderBy('name')
-            ->get(['id', 'code', 'name', 'item_type', 'unit', 'default_price', 'default_vendor_id']);
+            ->get(['id', 'code', 'name', 'item_type_id', 'unit', 'default_price', 'default_vendor_id']);
         $itemOptions = $feedItems->mapWithKeys(function (FeedItem $item): array {
             $defaultVendor = $item->defaultVendor;
             $validDefaultVendor = $defaultVendor
                 && $defaultVendor->status === 'ACTIVE'
-                && $defaultVendor->hasVendorSemantic(VendorType::SEMANTIC_FEED, VendorType::SEMANTIC_MULTIPLE);
+                && $this->vendorEligible($item, $defaultVendor);
 
             return [(string) $item->id => [
                 'id' => $item->id,
                 'code' => $item->code,
                 'name' => $item->name,
-                'type' => $item->item_type,
-                'type_label' => UserFacing::FEED_ITEM_TYPES[$item->item_type],
+                'type' => $item->itemType->semantic_type,
+                'type_label' => $item->itemType->name,
                 'unit' => $item->unit,
                 'default_price' => (float) $item->default_price,
                 'default_vendor_id' => $validDefaultVendor ? $item->default_vendor_id : null,
@@ -168,13 +168,8 @@ class FeedingTransactionController extends Controller
             'vendors' => Vendor::query()
                 ->with('vendorType:id,name,semantic_type')
                 ->where('status', 'ACTIVE')
-                ->whereHas('vendorType', fn (Builder $query) => $query->whereIn(
-                    'semantic_type',
-                    [VendorType::SEMANTIC_FEED, VendorType::SEMANTIC_MULTIPLE],
-                ))
                 ->orderBy('name')
                 ->get(['id', 'code', 'name', 'vendor_type_id']),
-            'typeLabels' => UserFacing::FEED_ITEM_TYPES,
         ]);
     }
 
@@ -193,13 +188,13 @@ class FeedingTransactionController extends Controller
                     throw ValidationException::withMessages(['location_id' => 'Petak yang dipilih tidak valid.']);
                 }
 
-                $feedItem = FeedItem::query()
+                $feedItem = FeedItem::query()->with('itemType:id,semantic_type')
                     ->whereKey($validated['feed_item_id'])
                     ->lockForUpdate()
                     ->first();
 
                 if (! $feedItem || $feedItem->status !== 'ACTIVE') {
-                    throw ValidationException::withMessages(['feed_item_id' => 'Pakan, nutrisi, atau obat yang dipilih tidak aktif.']);
+                    throw ValidationException::withMessages(['feed_item_id' => 'Barang/Item yang dipilih tidak aktif.']);
                 }
 
                 $vendor = null;
@@ -210,7 +205,7 @@ class FeedingTransactionController extends Controller
                         ->lockForUpdate()
                         ->first();
 
-                    if (! $vendor || $vendor->status !== 'ACTIVE' || ! $vendor->hasVendorSemantic(VendorType::SEMANTIC_FEED, VendorType::SEMANTIC_MULTIPLE)) {
+                    if (! $vendor || $vendor->status !== 'ACTIVE' || ! $this->vendorEligible($feedItem, $vendor)) {
                         throw ValidationException::withMessages(['vendor_id' => 'Vendor yang dipilih tidak valid.']);
                     }
                 }
@@ -296,7 +291,7 @@ class FeedingTransactionController extends Controller
                     'record_id' => $feedingTransaction->id,
                     'transaction_number' => $feedingTransaction->transaction_number,
                     'description' => $batch
-                        ? "Pemberian {$quantity} {$feedItem->unit} {$feedItem->name} di {$location->name} untuk {$batch->batch_code}"
+                        ? "Penggunaan {$quantity} {$feedItem->unit} {$feedItem->name} di {$location->name} untuk {$batch->batch_code}"
                         : "Penggunaan {$quantity} {$feedItem->unit} {$feedItem->name} di {$location->name}",
                     'new_values' => [
                         'location_id' => $location->id,
@@ -323,12 +318,12 @@ class FeedingTransactionController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'Pemberian pakan gagal dicatat. Silakan coba kembali.');
+                ->with('error', 'Penggunaan Barang/Item gagal dicatat. Silakan coba kembali.');
         }
 
         return redirect()
             ->route('feeding.show', $feedingTransaction)
-            ->with('success', 'Pemberian pakan berhasil dicatat.');
+            ->with('success', 'Penggunaan Barang/Item berhasil dicatat.');
     }
 
     public function edit(FeedingTransaction $feedingTransaction): View
@@ -338,7 +333,8 @@ class FeedingTransactionController extends Controller
             'location.parent:id,name',
             'batch:id,batch_code,commodity_id',
             'batch.commodity:id,name,unit',
-            'feedItem:id,code,name,item_type,unit',
+            'feedItem:id,code,name,item_type_id,unit',
+            'feedItem.itemType:id,name,semantic_type',
             'vendor:id,code,name,vendor_type_id',
             'vendor.vendorType:id,name,semantic_type',
         ]);
@@ -367,18 +363,13 @@ class FeedingTransactionController extends Controller
                 $query->where('status', 'ACTIVE')->orWhere('id', $feedingTransaction->feed_item_id);
             })
             ->orderBy('name')
-            ->get(['id', 'code', 'name', 'item_type', 'unit']);
+            ->with('itemType:id,name,semantic_type')
+            ->get(['id', 'code', 'name', 'item_type_id', 'unit']);
         $vendors = Vendor::query()
             ->with('vendorType:id,name,semantic_type')
             ->where(function (Builder $query) use ($feedingTransaction): void {
                 $query->where(function (Builder $query): void {
-                    $query->where('status', 'ACTIVE')->whereHas(
-                        'vendorType',
-                        fn (Builder $query) => $query->whereIn(
-                            'semantic_type',
-                            [VendorType::SEMANTIC_FEED, VendorType::SEMANTIC_MULTIPLE],
-                        ),
-                    );
+                    $query->where('status', 'ACTIVE');
                 });
 
                 if ($feedingTransaction->vendor_id) {
@@ -402,14 +393,14 @@ class FeedingTransactionController extends Controller
                     ->lockForUpdate()
                     ->firstOrFail();
                 $location = Location::query()->whereKey($validated['location_id'])->lockForUpdate()->first();
-                $feedItem = FeedItem::query()->whereKey($validated['feed_item_id'])->lockForUpdate()->first();
+                $feedItem = FeedItem::query()->with('itemType:id,semantic_type')->whereKey($validated['feed_item_id'])->lockForUpdate()->first();
 
                 if (! $location || $location->location_type !== 'PETAK' || $location->status !== 'ACTIVE') {
                     throw ValidationException::withMessages(['location_id' => 'Petak yang dipilih tidak valid.']);
                 }
 
                 if (! $feedItem || $feedItem->status !== 'ACTIVE') {
-                    throw ValidationException::withMessages(['feed_item_id' => 'Pakan, nutrisi, atau obat yang dipilih tidak aktif.']);
+                    throw ValidationException::withMessages(['feed_item_id' => 'Barang/Item yang dipilih tidak aktif.']);
                 }
 
                 $vendor = null;
@@ -417,7 +408,7 @@ class FeedingTransactionController extends Controller
                 if ($validated['vendor_id'] ?? null) {
                     $vendor = Vendor::query()->whereKey($validated['vendor_id'])->lockForUpdate()->first();
 
-                    if (! $vendor || $vendor->status !== 'ACTIVE' || ! $vendor->hasVendorSemantic(VendorType::SEMANTIC_FEED, VendorType::SEMANTIC_MULTIPLE)) {
+                    if (! $vendor || $vendor->status !== 'ACTIVE' || ! $this->vendorEligible($feedItem, $vendor)) {
                         throw ValidationException::withMessages(['vendor_id' => 'Vendor yang dipilih tidak valid.']);
                     }
                 }
@@ -506,7 +497,7 @@ class FeedingTransactionController extends Controller
                     'module' => 'FEEDING_TRANSACTION',
                     'record_id' => $lockedTransaction->id,
                     'transaction_number' => $lockedTransaction->transaction_number,
-                    'description' => "Pemberian pakan {$lockedTransaction->transaction_number} diperbarui",
+                    'description' => "Penggunaan Barang/Item {$lockedTransaction->transaction_number} diperbarui",
                     'old_values' => $oldValues,
                     'new_values' => [
                         'transaction_date' => $lockedTransaction->transaction_date->toDateTimeString(),
@@ -527,10 +518,10 @@ class FeedingTransactionController extends Controller
         } catch (Throwable $exception) {
             report($exception);
 
-            return back()->withInput()->with('error', 'Pemberian pakan gagal diperbarui. Silakan coba kembali.');
+            return back()->withInput()->with('error', 'Penggunaan Barang/Item gagal diperbarui. Silakan coba kembali.');
         }
 
-        return redirect()->route('feeding.show', $feedingTransaction)->with('success', 'Pemberian pakan berhasil diperbarui.');
+        return redirect()->route('feeding.show', $feedingTransaction)->with('success', 'Penggunaan Barang/Item berhasil diperbarui.');
     }
 
     public function destroy(Request $request, FeedingTransaction $feedingTransaction): RedirectResponse
@@ -548,7 +539,7 @@ class FeedingTransactionController extends Controller
                     'module' => 'FEEDING_TRANSACTION',
                     'record_id' => $lockedTransaction->id,
                     'transaction_number' => $lockedTransaction->transaction_number,
-                    'description' => "Pemberian pakan {$lockedTransaction->transaction_number} dihapus",
+                    'description' => "Penggunaan Barang/Item {$lockedTransaction->transaction_number} dihapus",
                     'old_values' => [
                         'transaction_date' => $lockedTransaction->transaction_date->toDateTimeString(),
                         'location_id' => $lockedTransaction->location_id,
@@ -571,10 +562,10 @@ class FeedingTransactionController extends Controller
         } catch (Throwable $exception) {
             report($exception);
 
-            return back()->with('error', 'Pemberian pakan gagal dihapus. Silakan coba kembali.');
+            return back()->with('error', 'Penggunaan Barang/Item gagal dihapus. Silakan coba kembali.');
         }
 
-        return redirect()->route('feeding.index')->with('success', 'Pemberian pakan berhasil dihapus. Stok tidak berubah.');
+        return redirect()->route('feeding.index')->with('success', 'Penggunaan Barang/Item berhasil dihapus. Stok tidak berubah.');
     }
 
     public function show(FeedingTransaction $feedingTransaction): View
@@ -584,7 +575,8 @@ class FeedingTransactionController extends Controller
             'location.parent:id,name',
             'batch:id,batch_code,commodity_id',
             'batch.commodity:id,code,name,unit',
-            'feedItem:id,code,name,item_type,unit',
+            'feedItem:id,code,name,item_type_id,unit',
+            'feedItem.itemType:id,name,semantic_type',
             'vendor:id,code,name',
             'createdBy:id,name',
         ]);
@@ -605,12 +597,17 @@ class FeedingTransactionController extends Controller
         return view('feeding.show', [
             'feedingTransaction' => $feedingTransaction,
             'currentStocks' => $currentStocks,
-            'typeLabels' => UserFacing::FEED_ITEM_TYPES,
         ]);
     }
 
     private function validPositiveId(mixed $value): ?int
     {
         return filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: null;
+    }
+
+    private function vendorEligible(FeedItem $item, Vendor $vendor): bool
+    {
+        return $item->itemType?->semantic_type === ItemType::SEMANTIC_OTHER
+            || $vendor->hasVendorSemantic(VendorType::SEMANTIC_FEED, VendorType::SEMANTIC_MULTIPLE);
     }
 }

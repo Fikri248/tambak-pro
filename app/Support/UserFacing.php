@@ -16,14 +16,8 @@ final class UserFacing
         'STOCKING' => 'Pembibitan',
         'MOVEMENT' => 'Pemindahan Stok',
         'ADJUSTMENT' => 'Perubahan Jumlah',
-        'FEEDING' => 'Pemberian Pakan',
-    ];
-
-    public const FEED_ITEM_TYPES = [
-        'FEED' => 'Pakan',
-        'NUTRITION' => 'Nutrisi',
-        'MEDICINE' => 'Obat',
-        'OTHER' => 'Lainnya',
+        'PURCHASE' => 'Pembelian Barang/Item',
+        'FEEDING' => 'Penggunaan Barang/Item',
     ];
 
     public const LOCATION_TYPES = [

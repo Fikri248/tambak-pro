@@ -83,6 +83,10 @@ class TransactionHistoryController extends Controller
             $queries[] = $this->feedingQuery($filters);
         }
 
+        if (in_array('PURCHASE', $types, true)) {
+            $queries[] = $this->purchaseQuery($filters);
+        }
+
         $union = array_shift($queries);
 
         foreach ($queries as $query) {
@@ -113,6 +117,7 @@ class TransactionHistoryController extends Controller
                 'commodity.id as commodity_id',
                 'commodity.name as commodity_name',
                 DB::raw('NULL as feed_item_name'),
+                DB::raw('NULL as vendor_name'),
                 DB::raw('NULL as adjustment_type'),
                 'source.quantity',
                 'commodity.unit',
@@ -169,6 +174,7 @@ class TransactionHistoryController extends Controller
                 'commodity.id as commodity_id',
                 'commodity.name as commodity_name',
                 DB::raw('NULL as feed_item_name'),
+                DB::raw('NULL as vendor_name'),
                 DB::raw('NULL as adjustment_type'),
                 'source.quantity',
                 'commodity.unit',
@@ -228,6 +234,7 @@ class TransactionHistoryController extends Controller
                 'commodity.id as commodity_id',
                 'commodity.name as commodity_name',
                 DB::raw('NULL as feed_item_name'),
+                DB::raw('NULL as vendor_name'),
                 'source.adjustment_type',
                 'source.quantity_change as quantity',
                 'commodity.unit',
@@ -285,6 +292,7 @@ class TransactionHistoryController extends Controller
                 'commodity.id as commodity_id',
                 'commodity.name as commodity_name',
                 'feed_item.name as feed_item_name',
+                'vendor.name as vendor_name',
                 DB::raw('NULL as adjustment_type'),
                 'source.feed_quantity as quantity',
                 'feed_item.unit',
@@ -322,6 +330,44 @@ class TransactionHistoryController extends Controller
         return $query;
     }
 
+    /** @param array<string, mixed> $filters */
+    private function purchaseQuery(array $filters): Builder
+    {
+        $query = DB::table('item_purchase_transactions as source')
+            ->join('feed_items as feed_item', 'feed_item.id', '=', 'source.feed_item_id')
+            ->join('vendors as vendor', 'vendor.id', '=', 'source.vendor_id')
+            ->leftJoin('users as creator', 'creator.id', '=', 'source.created_by')
+            ->selectRaw("source.id as source_id, 'PURCHASE' as type")
+            ->addSelect([
+                'source.transaction_number', 'source.transaction_date',
+                DB::raw('NULL as location_id'), DB::raw('NULL as location_name'),
+                DB::raw('NULL as secondary_location_id'), DB::raw('NULL as secondary_location_name'),
+                DB::raw('NULL as batch_id'), DB::raw('NULL as batch_code'),
+                DB::raw('NULL as commodity_id'), DB::raw('NULL as commodity_name'),
+                'feed_item.name as feed_item_name', 'vendor.name as vendor_name',
+                DB::raw('NULL as adjustment_type'), 'source.quantity', 'feed_item.unit',
+                'source.total_cost as amount', 'source.created_by as user_id', 'creator.name as user_name', 'source.created_at',
+            ]);
+
+        $this->applyCommonFilters($query, $filters, 'source');
+
+        if ($filters['search'] !== '') {
+            $search = '%'.$filters['search'].'%';
+            $query->where(fn (Builder $query) => $query
+                ->where('source.transaction_number', 'like', $search)
+                ->orWhere('feed_item.name', 'like', $search)
+                ->orWhere('vendor.name', 'like', $search)
+                ->orWhere('creator.name', 'like', $search)
+                ->orWhere('source.notes', 'like', $search));
+        }
+
+        if ($filters['location_id'] || $filters['commodity_id']) {
+            $query->whereRaw('1 = 0');
+        }
+
+        return $query;
+    }
+
     /**
      * @param  array<string, mixed>  $filters
      */
@@ -349,14 +395,15 @@ class TransactionHistoryController extends Controller
             $row->quantity = (float) $row->quantity;
             $row->amount = $row->amount !== null ? (float) $row->amount : null;
             $row->activity = $this->activity($row);
-            $row->location_display = $row->secondary_location_name
+            $row->location_display = $row->type === 'PURCHASE' ? $row->vendor_name : ($row->secondary_location_name
                 ? "{$row->location_name} → {$row->secondary_location_name}"
-                : $row->location_name;
+                : $row->location_name);
             $row->detail_url = match ($row->type) {
                 'STOCKING' => route('stocking.show', $row->source_id),
                 'MOVEMENT' => route('movements.show', $row->source_id),
                 'ADJUSTMENT' => route('adjustments.show', $row->source_id),
                 'FEEDING' => route('feeding.show', $row->source_id),
+                'PURCHASE' => route('item-purchases.show', $row->source_id),
             };
 
             return $row;
@@ -370,6 +417,7 @@ class TransactionHistoryController extends Controller
             'ADJUSTMENT' => (UserFacing::ADJUSTMENT_TYPES[$row->adjustment_type] ?? 'Lainnya')
                 ." · {$row->batch_code} · {$row->commodity_name}",
             'FEEDING' => $row->feed_item_name.' · '.($row->batch_code ?: 'Seluruh Petak'),
+            'PURCHASE' => $row->feed_item_name.' · '.$row->vendor_name,
         };
     }
 }

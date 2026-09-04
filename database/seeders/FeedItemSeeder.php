@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\FeedItem;
+use App\Models\ItemType;
 use App\Models\Vendor;
 use Illuminate\Database\Seeder;
 
@@ -16,7 +17,7 @@ class FeedItemSeeder extends Seeder
             [
                 'code' => 'PKN-001',
                 'name' => 'Pakan Starter A',
-                'item_type' => 'FEED',
+                'item_type_id' => ItemType::where('code', 'FEED')->valueOrFail('id'),
                 'default_vendor_id' => $feedVendor->id,
                 'unit' => 'kg',
                 'default_price' => 20000,
@@ -24,7 +25,7 @@ class FeedItemSeeder extends Seeder
             [
                 'code' => 'PKN-002',
                 'name' => 'Pakan Grower B',
-                'item_type' => 'FEED',
+                'item_type_id' => ItemType::where('code', 'FEED')->valueOrFail('id'),
                 'default_vendor_id' => $feedVendor->id,
                 'unit' => 'kg',
                 'default_price' => 25000,
@@ -32,7 +33,7 @@ class FeedItemSeeder extends Seeder
             [
                 'code' => 'NTR-001',
                 'name' => 'Vitamin Aqua',
-                'item_type' => 'NUTRITION',
+                'item_type_id' => ItemType::where('code', 'NUTRITION')->valueOrFail('id'),
                 'default_vendor_id' => null,
                 'unit' => 'liter',
                 'default_price' => 50000,
@@ -40,7 +41,7 @@ class FeedItemSeeder extends Seeder
             [
                 'code' => 'OBT-001',
                 'name' => 'Obat Tambak A',
-                'item_type' => 'MEDICINE',
+                'item_type_id' => ItemType::where('code', 'MEDICINE')->valueOrFail('id'),
                 'default_vendor_id' => null,
                 'unit' => 'botol',
                 'default_price' => 75000,

@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use App\Models\PondStock;
-use App\Models\VendorType;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -47,13 +46,7 @@ class FeedingTransactionRequest extends FormRequest
             'vendor_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('vendors', 'id')->where(
-                    fn (Builder $query) => $query
-                        ->where('status', 'ACTIVE')
-                        ->whereIn('vendor_type_id', VendorType::query()
-                            ->select('id')
-                            ->whereIn('semantic_type', [VendorType::SEMANTIC_FEED, VendorType::SEMANTIC_MULTIPLE])),
-                ),
+                Rule::exists('vendors', 'id')->where(fn (Builder $query) => $query->where('status', 'ACTIVE')),
             ],
             'feed_quantity' => ['required', 'numeric', 'gt:0', 'decimal:0,3', 'max:'.self::MAX_QUANTITY],
             'unit_cost' => ['required', 'numeric', 'min:0', 'decimal:0,4', 'max:'.self::MAX_UNIT_COST],
@@ -122,8 +115,8 @@ class FeedingTransactionRequest extends FormRequest
             'location_id.required' => 'Petak wajib dipilih.',
             'location_id.exists' => 'Petak yang dipilih tidak valid.',
             'batch_id.exists' => 'Batch tidak tersedia pada petak tersebut.',
-            'feed_item_id.required' => 'Pakan, nutrisi, atau obat wajib dipilih.',
-            'feed_item_id.exists' => 'Pakan, nutrisi, atau obat yang dipilih tidak aktif.',
+            'feed_item_id.required' => 'Barang/Item wajib dipilih.',
+            'feed_item_id.exists' => 'Barang/Item yang dipilih tidak aktif.',
             'vendor_id.exists' => 'Vendor yang dipilih tidak valid.',
             'feed_quantity.required' => 'Jumlah penggunaan wajib diisi.',
             'feed_quantity.gt' => 'Jumlah penggunaan harus lebih dari 0.',
@@ -146,7 +139,7 @@ class FeedingTransactionRequest extends FormRequest
             'transaction_date' => 'Tanggal Transaksi',
             'location_id' => 'Petak',
             'batch_id' => 'Batch',
-            'feed_item_id' => 'Pakan / Nutrisi / Obat',
+            'feed_item_id' => 'Barang/Item',
             'vendor_id' => 'Vendor',
             'feed_quantity' => 'Jumlah Penggunaan',
             'unit_cost' => 'Harga per Satuan',

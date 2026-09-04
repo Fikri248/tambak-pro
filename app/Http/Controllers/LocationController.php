@@ -359,7 +359,7 @@ class LocationController extends Controller
             ->get()
             ->map(fn (FeedingTransaction $item): array => [
                 'id' => "feeding-{$item->id}",
-                'type' => 'Pemberian Pakan',
+                'type' => 'Penggunaan Barang/Item',
                 'icon' => 'feed',
                 'description' => $this->formatQuantity($item->feed_quantity)." {$item->feedItem->unit} {$item->feedItem->name} diberikan".($item->batch ? " untuk {$item->batch->batch_code}" : '').'.',
                 'date' => $item->transaction_date,

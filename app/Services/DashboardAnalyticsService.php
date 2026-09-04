@@ -239,7 +239,7 @@ class DashboardAnalyticsService
             ['label' => 'Pembibitan', 'table' => 'stocking_transactions', 'alias' => 'st'],
             ['label' => 'Pemindahan', 'table' => 'stock_movements', 'alias' => 'sm'],
             ['label' => 'Perubahan Jumlah', 'table' => 'stock_adjustments', 'alias' => 'sa'],
-            ['label' => 'Pemberian Pakan', 'table' => 'feeding_transactions', 'alias' => 'ft'],
+            ['label' => 'Penggunaan Barang/Item', 'table' => 'feeding_transactions', 'alias' => 'ft'],
         ];
         $datasets = [];
 

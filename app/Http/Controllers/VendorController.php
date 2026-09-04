@@ -7,7 +7,6 @@ use App\Models\Vendor;
 use App\Models\VendorType;
 use App\Services\BusinessCodeGenerator;
 use App\Support\PageSize;
-use App\Support\UserFacing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -97,6 +96,7 @@ class VendorController extends Controller
             ->limit(12)
             ->get();
         $relatedFeedItems = $vendor->defaultFeedItems()
+            ->with('itemType:id,name')
             ->orderBy('name')
             ->limit(12)
             ->get();
@@ -116,7 +116,6 @@ class VendorController extends Controller
             'relatedBatches' => $relatedBatches,
             'relatedFeedItems' => $relatedFeedItems,
             'recentTransactions' => $recentTransactions,
-            'itemTypeLabels' => UserFacing::FEED_ITEM_TYPES,
         ]);
     }
 

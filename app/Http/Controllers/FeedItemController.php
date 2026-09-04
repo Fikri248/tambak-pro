@@ -4,11 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\FeedItemRequest;
 use App\Models\FeedItem;
+use App\Models\ItemType;
 use App\Models\Vendor;
-use App\Models\VendorType;
 use App\Services\BusinessCodeGenerator;
 use App\Support\PageSize;
-use App\Support\UserFacing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -21,15 +20,16 @@ class FeedItemController extends Controller
     public function index(Request $request): View
     {
         $search = mb_substr(trim((string) $request->query('search')), 0, 255);
-        $type = in_array($request->query('type'), array_keys(UserFacing::FEED_ITEM_TYPES), true)
-            ? $request->query('type')
+        $typeInput = trim((string) $request->query('type'));
+        $type = $typeInput !== ''
+            ? ItemType::query()->whereKey($typeInput)->orWhere('code', mb_strtoupper($typeInput))->value('id')
             : null;
         $status = in_array($request->query('status'), ['ACTIVE', 'INACTIVE'], true)
             ? $request->query('status')
             : null;
 
         $feedItems = FeedItem::query()
-            ->with(['defaultVendor:id,code,name,vendor_type_id,status', 'defaultVendor.vendorType:id,name,semantic_type'])
+            ->with(['itemType:id,name,semantic_type', 'defaultVendor:id,code,name,vendor_type_id,status', 'defaultVendor.vendorType:id,name,semantic_type'])
             ->when($search !== '', function (Builder $query) use ($search): void {
                 $query->where(function (Builder $query) use ($search): void {
                     $query->where('code', 'like', "%{$search}%")
@@ -39,7 +39,7 @@ class FeedItemController extends Controller
                         ->orWhereHas('defaultVendor', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"));
                 });
             })
-            ->when($type, fn (Builder $query, string $type) => $query->where('item_type', $type))
+            ->when($type, fn (Builder $query, int $type) => $query->where('item_type_id', $type))
             ->when($status, fn (Builder $query, string $status) => $query->where('status', $status))
             ->orderBy('name')
             ->paginate(PageSize::resolve($request))
@@ -47,21 +47,22 @@ class FeedItemController extends Controller
 
         return view('feed-items.index', [
             'feedItems' => $feedItems,
-            'typeLabels' => UserFacing::FEED_ITEM_TYPES,
+            'typeLabels' => $this->itemTypes()->pluck('name', 'id')->all(),
             'filters' => compact('search', 'type', 'status'),
             'summary' => [
                 'total' => FeedItem::query()->count(),
                 'active' => FeedItem::query()->where('status', 'ACTIVE')->count(),
-                'feed' => FeedItem::query()->where('item_type', 'FEED')->count(),
-                'nutritionMedicine' => FeedItem::query()->whereIn('item_type', ['NUTRITION', 'MEDICINE'])->count(),
+                'feed' => FeedItem::query()->whereHas('itemType', fn (Builder $query) => $query->where('semantic_type', ItemType::SEMANTIC_FEED))->count(),
+                'nutritionMedicine' => FeedItem::query()->whereHas('itemType', fn (Builder $query) => $query->whereIn('semantic_type', [ItemType::SEMANTIC_NUTRITION, ItemType::SEMANTIC_MEDICINE]))->count(),
             ],
+            'itemTypes' => $this->itemTypes(),
         ]);
     }
 
     public function create(): View
     {
         return view('feed-items.create', [
-            'typeLabels' => UserFacing::FEED_ITEM_TYPES,
+            'itemTypes' => $this->itemTypes(),
             'vendors' => $this->availableVendors(),
         ]);
     }
@@ -69,10 +70,11 @@ class FeedItemController extends Controller
     public function store(FeedItemRequest $request, BusinessCodeGenerator $codes): RedirectResponse
     {
         $validated = $request->safe()->except(['code', 'status']);
-        $prefix = match ($validated['item_type']) {
-            'FEED' => 'PKN',
-            'NUTRITION' => 'NTR',
-            'MEDICINE' => 'OBT',
+        $itemType = ItemType::query()->findOrFail($validated['item_type_id']);
+        $prefix = match ($itemType->semantic_type) {
+            ItemType::SEMANTIC_FEED => 'PKN',
+            ItemType::SEMANTIC_NUTRITION => 'NTR',
+            ItemType::SEMANTIC_MEDICINE => 'OBT',
             default => 'LNN',
         };
         $feedItem = $codes->create(FeedItem::class, 'code', $prefix, [
@@ -82,12 +84,12 @@ class FeedItemController extends Controller
 
         return redirect()
             ->route('feed-items.show', $feedItem)
-            ->with('success', 'Pakan, nutrisi, atau obat berhasil ditambahkan.');
+            ->with('success', 'Barang/Item berhasil ditambahkan.');
     }
 
     public function show(FeedItem $feedItem): View
     {
-        $feedItem->load(['defaultVendor:id,code,name,vendor_type_id,status', 'defaultVendor.vendorType:id,name,semantic_type']);
+        $feedItem->load(['itemType:id,name,semantic_type', 'defaultVendor:id,code,name,vendor_type_id,status', 'defaultVendor.vendorType:id,name,semantic_type']);
         $usageCount = $feedItem->feedingTransactions()->count();
         $totalUsage = (float) $feedItem->feedingTransactions()->sum('feed_quantity');
         $totalCost = (float) $feedItem->feedingTransactions()->sum('total_cost');
@@ -109,17 +111,16 @@ class FeedItemController extends Controller
             'usageCount' => $usageCount,
             'totalUsage' => $totalUsage,
             'totalCost' => $totalCost,
-            'typeLabels' => UserFacing::FEED_ITEM_TYPES,
         ]);
     }
 
     public function edit(FeedItem $feedItem): View
     {
-        $feedItem->load(['defaultVendor:id,code,name,vendor_type_id,status', 'defaultVendor.vendorType:id,name,semantic_type']);
+        $feedItem->load(['itemType:id,name,semantic_type', 'defaultVendor:id,code,name,vendor_type_id,status', 'defaultVendor.vendorType:id,name,semantic_type']);
 
         return view('feed-items.edit', [
             'feedItem' => $feedItem,
-            'typeLabels' => UserFacing::FEED_ITEM_TYPES,
+            'itemTypes' => $this->itemTypes(),
             'vendors' => $this->availableVendors($feedItem),
         ]);
     }
@@ -130,7 +131,7 @@ class FeedItemController extends Controller
 
         return redirect()
             ->route('feed-items.show', $feedItem)
-            ->with('success', 'Pakan, nutrisi, atau obat berhasil diperbarui.');
+            ->with('success', 'Barang/Item berhasil diperbarui.');
     }
 
     public function status(FeedItem $feedItem): RedirectResponse
@@ -160,11 +161,8 @@ class FeedItemController extends Controller
             ->with('vendorType:id,name,semantic_type')
             ->where(function (Builder $query) use ($feedItem): void {
                 $query->where(function (Builder $query): void {
-                    $query->where('status', 'ACTIVE')
-                        ->whereHas('vendorType', fn (Builder $query) => $query->whereIn(
-                            'semantic_type',
-                            [VendorType::SEMANTIC_FEED, VendorType::SEMANTIC_MULTIPLE],
-                        ));
+                    $query->where('status', 'ACTIVE');
+
                 });
 
                 if ($feedItem?->default_vendor_id) {
@@ -173,5 +171,11 @@ class FeedItemController extends Controller
             })
             ->orderBy('name')
             ->get(['id', 'code', 'name', 'vendor_type_id', 'status']);
+    }
+
+    /** @return Collection<int, ItemType> */
+    private function itemTypes(): Collection
+    {
+        return ItemType::query()->orderByDesc('is_system')->orderBy('id')->get();
     }
 }

@@ -1,19 +1,19 @@
 # Tambak Pro
 
-Tambak Pro adalah aplikasi web untuk mencatat dan memantau kegiatan operasional tambak. Aplikasi dibangun dengan Laravel 12 dan Blade untuk mengelola hierarki lokasi, komoditas, Vendor, kebutuhan pakan, Batch, posisi stok per petak, transaksi operasional, riwayat, serta laporan.
+Tambak Pro adalah aplikasi web untuk mencatat dan memantau kegiatan operasional tambak. Aplikasi dibangun dengan Laravel 12 dan Blade untuk mengelola hierarki lokasi, komoditas, Vendor, Barang/Item, Batch, posisi stok per petak, transaksi operasional, riwayat, serta laporan.
 
 ## Tentang Aplikasi
 
 Tambak Pro membantu kegiatan budidaya perairan melalui satu alur data yang saling terhubung:
 
 - Struktur lokasi bertingkat **Area → Tambak → Petak**.
-- Master komoditas, Vendor, serta pakan, nutrisi, obat, dan kebutuhan lainnya.
+- Master komoditas, Vendor, serta Barang/Item.
 - Batch komoditas dan posisi stok terkini pada setiap petak.
-- Pembibitan, pemindahan stok, perubahan jumlah, dan pemberian pakan.
+- Pembibitan, pemindahan stok, perubahan jumlah, pembelian, dan penggunaan Barang/Item.
 - Riwayat transaksi terpadu dan AuditLog untuk keterlacakan.
 - Dashboard analitik dan laporan operasional dalam format web, CSV, XLSX, Print, dan PDF.
 
-Kode bisnis seperti kode lokasi, Vendor, komoditas, kebutuhan pakan, dan Batch dibuat otomatis oleh server. Pengguna tidak perlu mengetik kode identitas saat membuat data.
+Kode bisnis seperti kode lokasi, Vendor, komoditas, Barang/Item, transaksi, dan Batch dibuat otomatis oleh server. Pengguna tidak perlu mengetik kode identitas saat membuat data.
 
 ## Fitur Utama
 
@@ -253,9 +253,9 @@ Perintah tersebut lebih berat daripada menjalankan `php artisan serve` dan `npm 
 
 1. Role dan user.
 2. Hierarki lokasi.
-3. Vendor, komoditas, dan pakan/nutrisi/obat.
+3. Vendor, komoditas, dan Barang/Item.
 4. Commodity Batch.
-5. Pembibitan, perubahan jumlah, pemindahan stok, dan pemberian pakan.
+5. Pembibitan, perubahan jumlah, pemindahan stok, dan penggunaan Barang/Item.
 6. Saldo `pond_stocks`.
 7. AuditLog.
 8. Dataset `LargeDemoSeeder` khusus environment `local` atau `testing`.
@@ -281,9 +281,9 @@ Seeder ini tidak pernah dijalankan otomatis pada production dan akan menolak eks
 - 5 Area, 25 Tambak, dan 500 Petak.
 - 500 Vendor.
 - 500 komoditas.
-- 500 item pakan/nutrisi/obat.
+- 500 Barang/Item.
 - 500 Batch.
-- Masing-masing 500 transaksi Pembibitan, Pemindahan Stok, Perubahan Jumlah, dan Pemberian Pakan.
+- Masing-masing 500 transaksi Pembibitan, Pemindahan Stok, Perubahan Jumlah, dan Penggunaan Barang/Item.
 - Saldo stok dan AuditLog yang sesuai dengan transaksi demo.
 
 Transaksi baru pada dataset besar dibagikan secara round-robin dan deterministik kepada sepuluh akun Admin, sehingga setiap Admin memperoleh sekitar 50 transaksi per jenis beserta AuditLog yang konsisten. Seeder bersifat transactional, deterministic, dan idempotent selama Petak atau Batch `LDM-*` belum dipakai oleh transaksi biasa. Actor pada riwayat yang sudah ada tidak ditulis ulang saat seeder dijalankan kembali. Jika namespace atau ledger demo sudah dipakai data non-demo, seeder membatalkan proses untuk melindungi konsistensi stok dan riwayat.
@@ -317,7 +317,7 @@ Urutan menu berikut sesuai dengan Sidebar saat ini.
 
 ### Dashboard
 
-Menampilkan KPI utama, posisi stok terkini, grafik berdasarkan Tambak dan komoditas, tren pembibitan/kematian/biaya pakan, aktivitas transaksi, serta AuditLog terbaru. Filter periode hanya memengaruhi data historis dan aktivitas; stok saat ini tetap memakai posisi `pond_stocks` terkini.
+Menampilkan KPI utama, posisi stok terkini, grafik berdasarkan Tambak dan komoditas, tren pembibitan/kematian/biaya penggunaan Barang/Item, aktivitas transaksi, serta AuditLog terbaru. Filter periode hanya memengaruhi data historis dan aktivitas; stok saat ini tetap memakai posisi `pond_stocks` terkini.
 
 ### Tambak
 
@@ -331,9 +331,9 @@ Mengelola jenis komoditas budidaya, kategori, satuan, status, Batch terkait, dan
 
 Mengelola penyedia bibit, pakan, obat, jasa, atau beberapa jenis kebutuhan sekaligus. Detail Vendor menampilkan keterkaitan Batch dan kebutuhan operasional. Nomor Indonesia yang valid dapat dibuka melalui action WhatsApp.
 
-### Pakan, Nutrisi & Obat
+### Barang/Item
 
-Mengelola master kebutuhan operasional berdasarkan jenis `FEED`, `NUTRITION`, `MEDICINE`, atau `OTHER`, termasuk satuan, harga acuan, dan Vendor utama. Kode dibuat otomatis sesuai jenis dan tetap menjadi identitas record ketika data diedit.
+Mengelola master Barang/Item, termasuk Jenis Barang/Item, satuan, harga acuan, dan Vendor utama. Jenis disimpan pada lookup database; Admin dapat menambah, mengubah nama, dan menghapus jenis custom yang belum digunakan. Jenis canonical Pakan, Nutrisi, Obat, dan Lainnya mempertahankan semantic `FEED`, `NUTRITION`, `MEDICINE`, dan `OTHER`. Kode Barang/Item dibuat otomatis sesuai semantic dan tetap menjadi identitas record ketika data diedit.
 
 ### Chart of Accounts
 
@@ -351,17 +351,21 @@ Memindahkan stok suatu Batch dari Petak asal ke Petak tujuan. Sistem memvalidasi
 
 Mencatat kematian, kehilangan, koreksi masuk, atau perubahan lain. Sistem menyimpan jumlah sebelum/sesudah dan mencegah stok menjadi negatif.
 
-### Pemberian Pakan
+### Pembelian Barang/Item
 
-Mencatat penggunaan pakan, nutrisi, obat, atau kebutuhan lain untuk Petak/Batch, termasuk kuantitas, harga satuan, total biaya, dan Vendor bila tersedia. Transaksi ini tidak mengurangi `pond_stocks` komoditas.
+Mencatat kuantitas dan biaya pengadaan dari Vendor aktif. Nomor transaksi dibuat otomatis, total dihitung oleh server dari jumlah × harga satuan, dan mutasi dicatat pada AuditLog. Modul ini belum membuat saldo inventori Barang/Item dan belum melakukan posting jurnal atau buku besar.
+
+### Penggunaan Barang/Item
+
+Mencatat penggunaan Barang/Item untuk Petak/Batch, termasuk kuantitas, harga satuan, total biaya, dan Vendor bila tersedia. Transaksi ini tidak mengurangi `pond_stocks` komoditas maupun saldo inventori Barang/Item.
 
 ### Riwayat Transaksi
 
-Menggabungkan Pembibitan, Pemindahan Stok, Perubahan Jumlah, dan Pemberian Pakan dalam satu timeline. Data dapat dicari dan difilter berdasarkan jenis, lokasi, komoditas, pengguna, serta periode, kemudian dibuka ke detail transaksi sumber.
+Menggabungkan Pembibitan, Pemindahan Stok, Perubahan Jumlah, Pembelian Barang/Item, dan Penggunaan Barang/Item dalam satu timeline. Data dapat dicari dan difilter berdasarkan jenis, lokasi, komoditas, pengguna, serta periode, kemudian dibuka ke detail transaksi sumber.
 
 ### Laporan Operasional
 
-Menyediakan delapan laporan: Stok Saat Ini, Pembibitan, Pemindahan Stok, Perubahan Jumlah, Pakan/Nutrisi/Obat, Vendor, Komoditas, serta Tambak & Petak. Setiap laporan mendukung filter yang relevan, tampilan web, Print, PDF, CSV, dan XLSX.
+Menyediakan delapan laporan: Stok Saat Ini, Pembibitan, Pemindahan Stok, Perubahan Jumlah, Penggunaan Barang/Item, Vendor, Komoditas, serta Tambak & Petak. Setiap laporan mendukung filter yang relevan, tampilan web, Print, PDF, CSV, dan XLSX. Laporan pembelian belum ditambahkan karena transaksi pembelian belum terhubung ke inventori atau akuntansi.
 
 ## Hak Akses dan Jobdesk
 
@@ -369,8 +373,8 @@ Menyediakan delapan laporan: Stok Saat Ini, Pembibitan, Pemindahan Stok, Perubah
 
 Admin bertanggung jawab atas master data dan transaksi operasional aplikasi:
 
-- Membuat, melihat, mengubah, mengaktifkan, atau menonaktifkan master Tambak, Komoditas, Vendor, Pakan/Nutrisi/Obat, dan Chart of Accounts, termasuk menambah pilihan akuntansi.
-- Membuat, melihat, mengubah, dan menghapus Pembibitan, Pemindahan Stok, Perubahan Jumlah, dan Pemberian Pakan selama aturan keselamatan bisnis mengizinkan.
+- Membuat, melihat, mengubah, mengaktifkan, atau menonaktifkan master Tambak, Komoditas, Vendor, Barang/Item, dan Chart of Accounts, termasuk mengelola Jenis Barang/Item serta pilihan akuntansi.
+- Membuat, melihat, mengubah, dan menghapus Pembibitan, Pemindahan Stok, Perubahan Jumlah, Pembelian Barang/Item, dan Penggunaan Barang/Item selama aturan keselamatan bisnis mengizinkan.
 - Memeriksa Dashboard, Riwayat Transaksi, AuditLog yang ditampilkan, dan Laporan.
 - Melakukan export, Print, dan PDF untuk kebutuhan operasional.
 - Menjaga kelengkapan master, ketepatan transaksi, serta konsistensi stok dan riwayat operasional.
@@ -380,7 +384,7 @@ Admin bertanggung jawab atas master data dan transaksi operasional aplikasi:
 Role Manager tetap mendukung transaksi operasional, tetapi tidak memiliki akun demo bawaan:
 
 - Melihat Dashboard serta daftar/detail master tanpa mengubahnya.
-- Membuat, melihat, mengubah, dan menghapus Pembibitan, Pemindahan Stok, Perubahan Jumlah, dan Pemberian Pakan sesuai aturan keselamatan stok.
+- Membuat, melihat, mengubah, dan menghapus Pembibitan, Pemindahan Stok, Perubahan Jumlah, Pembelian Barang/Item, dan Penggunaan Barang/Item sesuai aturan bisnis.
 - Menelusuri Riwayat Transaksi.
 - Melihat, memfilter, mengekspor, mencetak, dan mengunduh laporan.
 - Tidak membuat, mengubah, mengaktifkan, atau menonaktifkan master data.
@@ -394,12 +398,14 @@ Role Manager tetap mendukung transaksi operasional, tetapi tidak memiliki akun d
 | Master Tambak | Kelola | Lihat |
 | Master Komoditas | Kelola | Lihat |
 | Master Vendor | Kelola | Lihat |
-| Master Pakan/Nutrisi/Obat | Kelola | Lihat |
+| Master Barang/Item | Kelola | Lihat |
+| Jenis Barang/Item | Kelola | Lihat sebagai pilihan |
 | Master Chart of Accounts | Kelola | Lihat |
 | Pembibitan | Kelola | Kelola |
 | Pemindahan Stok | Kelola | Kelola |
 | Perubahan Jumlah | Kelola | Kelola |
-| Pemberian Pakan | Kelola | Kelola |
+| Pembelian Barang/Item | Kelola | Kelola |
+| Penggunaan Barang/Item | Kelola | Kelola |
 | Melihat Riwayat Transaksi | Ya | Ya |
 | Melihat dan memfilter Laporan | Ya | Ya |
 | Export CSV/XLSX | Ya | Ya |

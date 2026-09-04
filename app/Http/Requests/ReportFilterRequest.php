@@ -26,8 +26,8 @@ class ReportFilterRequest extends FormRequest
             'vendor_id' => ['nullable', 'integer', 'exists:vendors,id'],
             'feed_item_id' => ['nullable', 'integer', 'exists:feed_items,id'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'type' => $this->routeIs('reports.vendors*')
-                ? ['nullable', 'integer', 'exists:vendor_types,id']
+            'type' => $this->routeIs('reports.vendors*', 'reports.feeding*')
+                ? ['nullable', 'integer', Rule::exists($this->routeIs('reports.vendors*') ? 'vendor_types' : 'item_types', 'id')]
                 : ['nullable', Rule::in([
                     'MORTALITY', 'LOSS', 'CORRECTION_IN', 'CORRECTION_OUT', 'OTHER',
                     'FEED', 'NUTRITION', 'MEDICINE',
@@ -49,10 +49,14 @@ class ReportFilterRequest extends FormRequest
             $normalized[$field] = $this->filled($field) ? $this->input($field) : null;
         }
 
-        $type = $this->filled('type') ? mb_strtoupper(trim((string) $this->input('type'))) : null;
+        $type = $this->filled('type') ? trim((string) $this->input('type')) : null;
 
         if ($type !== null && $this->routeIs('reports.vendors*') && ! ctype_digit($type)) {
             $type = (string) (VendorType::query()->where('code', $type)->value('id') ?? '');
+        }
+
+        if ($type !== null && ! $this->routeIs('reports.vendors*', 'reports.feeding*')) {
+            $type = mb_strtoupper($type);
         }
 
         $this->merge($normalized + [
@@ -91,7 +95,7 @@ class ReportFilterRequest extends FormRequest
             'commodity_id' => 'Komoditas',
             'batch_id' => 'Batch',
             'vendor_id' => 'Vendor',
-            'feed_item_id' => 'Pakan / Nutrisi / Obat',
+            'feed_item_id' => 'Barang/Item',
             'user_id' => 'Dicatat Oleh',
             'type' => 'Jenis',
             'status' => 'Status',

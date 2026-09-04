@@ -12,7 +12,7 @@
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Ringkasan riwayat transaksi">
             <x-kpi-card label="Total Transaksi" :value="number_format($summary['total'], 0, ',', '.')" icon="history" />
             <x-kpi-card label="Transaksi Stok" :value="number_format($summary['stock'], 0, ',', '.')" icon="transfer" />
-            <x-kpi-card label="Pemberian Pakan" :value="number_format($summary['feeding'], 0, ',', '.')" icon="feed" />
+            <x-kpi-card label="Penggunaan Barang/Item" :value="number_format($summary['feeding'], 0, ',', '.')" icon="feed" />
             <x-kpi-card label="Aktivitas Bulan Ini" :value="number_format($summary['currentMonth'], 0, ',', '.')" icon="calendar" />
         </section>
 
@@ -53,7 +53,7 @@
         </x-card>
 
         <div>
-            <x-table-wrapper title="Aktivitas Operasional" description="Data berasal langsung dari empat modul transaksi dan hanya dapat dibaca.">
+            <x-table-wrapper title="Aktivitas Operasional" description="Data berasal langsung dari lima modul transaksi dan hanya dapat dibaca.">
                 @if ($history->isEmpty())
                     @if (array_filter($filters, fn ($value) => $value !== null && $value !== ''))
                         <x-empty-state title="Tidak ada transaksi yang sesuai dengan filter" description="Coba ubah kata kunci atau filter yang digunakan." icon="search" />

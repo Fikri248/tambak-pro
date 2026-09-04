@@ -102,6 +102,11 @@ class User extends Authenticatable
         return $this->hasMany(FeedingTransaction::class, 'created_by');
     }
 
+    public function itemPurchaseTransactions(): HasMany
+    {
+        return $this->hasMany(ItemPurchaseTransaction::class, 'created_by');
+    }
+
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AuditLog::class);

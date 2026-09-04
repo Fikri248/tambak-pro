@@ -5,7 +5,7 @@
                 <x-icon name="arrow-left" class="size-4" />
                 {{ $feedingTransaction->transaction_number }}
             </a>
-            <x-page-header title="Edit Pemberian Pakan" description="Perbarui penggunaan dan biaya tanpa mengubah stok bibit." />
+            <x-page-header title="Edit Penggunaan Barang/Item" description="Perbarui penggunaan dan biaya tanpa mengubah stok." />
         </div>
 
         <x-flash-message />
@@ -44,7 +44,7 @@
                         </x-form.select>
                     </div>
 
-                    <x-form.select name="feed_item_id" label="Pakan, Nutrisi, atau Obat" required>
+                    <x-form.select name="feed_item_id" label="Barang/Item" required>
                         <option value="">Pilih kebutuhan</option>
                         @foreach ($feedItems as $feedItem)
                             <option value="{{ $feedItem->id }}" @selected((string) old('feed_item_id', $feedingTransaction->feed_item_id) === (string) $feedItem->id)>

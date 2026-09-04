@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Detail Pemberian Pakan · '.$feedingTransaction->transaction_number">
+<x-layouts.app :title="'Detail Penggunaan Barang/Item · '.$feedingTransaction->transaction_number">
     @php
         $item = $feedingTransaction->feedItem;
         $batch = $feedingTransaction->batch;
@@ -10,19 +10,14 @@
             ?? (($currentStocks->pluck('batch.commodity.unit')->filter()->unique()->count() === 1)
                 ? $currentStocks->pluck('batch.commodity.unit')->filter()->first()
                 : 'unit stok');
-        $activityLabel = match ($item->item_type) {
-            'FEED' => 'Pemberian Pakan',
-            'NUTRITION' => 'Pemberian Nutrisi',
-            'MEDICINE' => 'Penggunaan Obat',
-            default => 'Penggunaan Kebutuhan Lain',
-        };
+        $activityLabel = 'Penggunaan '.$item->itemType->name;
     @endphp
 
     <div class="space-y-6">
         <div>
             <a href="{{ route('feeding.index') }}" class="mb-4 inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900">
                 <x-icon name="arrow-left" class="size-4" />
-                Pemberian Pakan
+                Penggunaan Barang/Item
             </a>
             <div class="flex flex-wrap items-center gap-3">
                 <h1 class="font-mono text-2xl font-semibold tracking-tight text-neutral-950 sm:text-[26px]">{{ $feedingTransaction->transaction_number }}</h1>
@@ -33,7 +28,7 @@
 
         <x-flash-message />
 
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Ringkasan pemberian pakan">
+        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Ringkasan penggunaan Barang/Item">
             <x-kpi-card label="Jumlah Penggunaan" :value="number_format($quantity, $quantityDecimals, ',', '.')" :suffix="$item->unit" icon="feed" />
             <x-kpi-card label="Harga per Satuan" :value="'Rp'.number_format((float) $feedingTransaction->unit_cost, 0, ',', '.')" :suffix="'/ '.$item->unit" icon="coins" />
             <x-kpi-card label="Total Biaya" :value="'Rp'.number_format((float) $feedingTransaction->total_cost, 0, ',', '.')" icon="coins" />
@@ -52,8 +47,8 @@
                     @if ($batch)
                         <div><dt class="text-xs text-neutral-500">Komoditas</dt><dd class="mt-1 text-sm text-neutral-800"><a href="{{ route('commodities.show', $batch->commodity) }}" class="font-medium hover:underline">{{ $batch->commodity->name }}</a></dd></div>
                     @endif
-                    <div><dt class="text-xs text-neutral-500">Pakan / Nutrisi / Obat</dt><dd class="mt-1 text-sm font-medium text-neutral-800"><a href="{{ route('feed-items.show', $item) }}" class="hover:underline">{{ $item->name }}</a></dd></div>
-                    <div><dt class="text-xs text-neutral-500">Jenis Kebutuhan</dt><dd class="mt-1"><x-badge>{{ $typeLabels[$item->item_type] }}</x-badge></dd></div>
+                    <div><dt class="text-xs text-neutral-500">Barang/Item</dt><dd class="mt-1 text-sm font-medium text-neutral-800"><a href="{{ route('feed-items.show', $item) }}" class="hover:underline">{{ $item->name }}</a></dd></div>
+                    <div><dt class="text-xs text-neutral-500">Jenis Barang/Item</dt><dd class="mt-1"><x-badge>{{ $item->itemType->name }}</x-badge></dd></div>
                     @if ($feedingTransaction->vendor)
                         <div><dt class="text-xs text-neutral-500">Vendor</dt><dd class="mt-1 text-sm text-neutral-800"><a href="{{ route('vendors.show', $feedingTransaction->vendor) }}" class="font-medium hover:underline">{{ $feedingTransaction->vendor->name }}</a></dd></div>
                     @endif
@@ -101,6 +96,6 @@
             </x-card>
         </div>
 
-        <p class="text-xs leading-5 text-neutral-500">Admin dan Manager dapat mengedit atau menghapus catatan pemberian ini. Transaksi hanya mencatat penggunaan dan biaya; jumlah stok bibit tidak berubah.</p>
+        <p class="text-xs leading-5 text-neutral-500">Admin dan Manager dapat mengedit atau menghapus catatan penggunaan ini. Transaksi hanya mencatat penggunaan dan biaya; jumlah stok tidak berubah.</p>
     </div>
 </x-layouts.app>

@@ -7,6 +7,7 @@ use App\Models\Commodity;
 use App\Models\CommodityBatch;
 use App\Models\FeedingTransaction;
 use App\Models\FeedItem;
+use App\Models\ItemType;
 use App\Models\Location;
 use App\Models\PondStock;
 use App\Models\StockAdjustment;
@@ -299,6 +300,7 @@ class LargeDemoSeeder extends Seeder
     private function seedFeedItems(array $vendors): array
     {
         $types = ['FEED', 'NUTRITION', 'MEDICINE', 'OTHER'];
+        $typeIds = ItemType::query()->whereIn('code', $types)->pluck('id', 'code');
         $unitsByType = [
             'FEED' => 'kg',
             'NUTRITION' => 'liter',
@@ -325,7 +327,7 @@ class LargeDemoSeeder extends Seeder
             $rows[] = [
                 'code' => $code,
                 'name' => $name,
-                'item_type' => $type,
+                'item_type_id' => $typeIds[$type],
                 'default_vendor_id' => $vendors['ids'][$vendorCode],
                 'unit' => $unitsByType[$type],
                 'default_price' => $price,
@@ -343,7 +345,7 @@ class LargeDemoSeeder extends Seeder
             FeedItem::class,
             $rows,
             ['code'],
-            ['name', 'item_type', 'default_vendor_id', 'unit', 'default_price', 'description', 'status'],
+            ['name', 'item_type_id', 'default_vendor_id', 'unit', 'default_price', 'description', 'status'],
         );
 
         $ids = FeedItem::query()
@@ -513,7 +515,7 @@ class LargeDemoSeeder extends Seeder
                 'unit_cost' => $feedUnitCost,
                 'total_cost' => $feedingTotalCost,
                 'created_by' => $actorId,
-                'notes' => self::MARKER.' Pemberian pakan sintetis '.sprintf('%04d', $index).'.',
+                'notes' => self::MARKER.' Penggunaan Barang/Item sintetis '.sprintf('%04d', $index).'.',
                 'created_at' => $day->setTime(12, 0),
             ];
             $pondRows[] = [

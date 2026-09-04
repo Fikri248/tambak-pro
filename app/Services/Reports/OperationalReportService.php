@@ -66,7 +66,7 @@ class OperationalReportService
             'summaryCards' => [
                 $this->summary('Total Stok Saat Ini', $this->quantity($metrics['current_stock']), 'ekor', 'seedling'),
                 $this->summary('Nilai Stok Saat Ini', $this->money($metrics['stock_value']), null, 'coins'),
-                $this->summary('Biaya Pakan, Nutrisi & Obat', $this->money($metrics['feeding_cost']), null, 'feed'),
+                $this->summary('Biaya Penggunaan Barang/Item', $this->money($metrics['feeding_cost']), null, 'feed'),
                 $this->summary('Kematian Tercatat', $this->quantity($metrics['mortality']), 'ekor', 'adjustment'),
             ],
             'reportCards' => [
@@ -74,7 +74,7 @@ class OperationalReportService
                 $this->reportCard('Pembibitan', 'Riwayat bibit masuk dan nilai pembibitan.', route('reports.stocking'), DB::table('stocking_transactions')->count().' transaksi', 'seedling'),
                 $this->reportCard('Pemindahan Stok', 'Pantau perpindahan stok antarpetak.', route('reports.movements'), DB::table('stock_movements')->count().' transaksi', 'transfer'),
                 $this->reportCard('Perubahan Jumlah', 'Kematian, kehilangan, dan penyesuaian stok.', route('reports.adjustments'), DB::table('stock_adjustments')->count().' transaksi', 'adjustment'),
-                $this->reportCard('Pakan, Nutrisi & Obat', 'Penggunaan pakan, nutrisi, obat, dan biaya tercatat.', route('reports.feeding'), $this->money($metrics['feeding_cost']), 'feed'),
+                $this->reportCard('Penggunaan Barang/Item', 'Penggunaan Barang/Item dan biaya tercatat.', route('reports.feeding'), $this->money($metrics['feeding_cost']), 'feed'),
                 $this->reportCard('Vendor', 'Ringkasan keterlibatan Vendor operasional.', route('reports.vendors'), DB::table('vendors')->count().' Vendor', 'truck'),
                 $this->reportCard('Komoditas', 'Posisi stok dan aktivitas per komoditas.', route('reports.commodities'), DB::table('commodities')->count().' komoditas', 'package'),
                 $this->reportCard('Tambak & Petak', 'Ringkasan operasional berdasarkan lokasi.', route('reports.locations'), DB::table('locations')->where('location_type', 'PETAK')->count().' petak', 'map'),
@@ -203,17 +203,17 @@ class OperationalReportService
     private function feedingExport(array $filters): ReportExportDefinition
     {
         $query = $this->feedingQuery($filters)
-            ->select(['ft.transaction_number', 'ft.transaction_date', 'tambak.name as tambak_name', 'petak.name as petak_name', 'batch.batch_code', 'commodity.name as commodity_name', 'commodity.unit as stock_unit', 'item.name as item_name', 'item.item_type', 'item.unit as item_unit', 'vendor.name as vendor_name', 'ft.stock_quantity_snapshot', 'ft.feed_quantity', 'ft.unit_cost', 'ft.total_cost', 'creator.name as user_name', 'ft.notes'])
+            ->select(['ft.transaction_number', 'ft.transaction_date', 'tambak.name as tambak_name', 'petak.name as petak_name', 'batch.batch_code', 'commodity.name as commodity_name', 'commodity.unit as stock_unit', 'item.name as item_name', 'item_type.name as item_type_name', 'item.unit as item_unit', 'vendor.name as vendor_name', 'ft.stock_quantity_snapshot', 'ft.feed_quantity', 'ft.unit_cost', 'ft.total_cost', 'creator.name as user_name', 'ft.notes'])
             ->orderByDesc('ft.transaction_date')->orderByDesc('ft.created_at')->orderByDesc('ft.id');
 
-        return $this->definition('Laporan Penggunaan Pakan & Biaya', 'Pakan & Biaya', 'laporan-pakan', [
-            'No. Transaksi', 'Tanggal', 'Tambak', 'Petak', 'Cakupan', 'Komoditas', 'Item',
-            'Jenis', 'Vendor', 'Stok Saat Pencatatan', 'Satuan Stok', 'Jumlah Penggunaan',
+        return $this->definition('Laporan Penggunaan Barang/Item', 'Penggunaan Barang/Item', 'laporan-penggunaan-barang-item', [
+            'No. Transaksi', 'Tanggal', 'Tambak', 'Petak', 'Cakupan', 'Komoditas', 'Barang/Item',
+            'Jenis Barang/Item', 'Vendor', 'Stok Saat Pencatatan', 'Satuan Stok', 'Jumlah Penggunaan',
             'Satuan', 'Harga per Satuan', 'Total Biaya', 'Dicatat Oleh', 'Catatan',
         ], $query, fn (object $row): array => [
             $row->transaction_number, Carbon::parse($row->transaction_date)->format('Y-m-d H:i:s'),
             $row->tambak_name ?: 'Tanpa Tambak', $row->petak_name, $row->batch_code ?: 'Seluruh Petak',
-            $row->commodity_name ?: '-', $row->item_name, UserFacing::FEED_ITEM_TYPES[$row->item_type] ?? 'Lainnya',
+            $row->commodity_name ?: '-', $row->item_name, $row->item_type_name,
             $row->vendor_name ?: '-', $row->stock_quantity_snapshot !== null ? (float) $row->stock_quantity_snapshot : null,
             $row->stock_unit ?: 'ekor', (float) $row->feed_quantity, $row->item_unit,
             (float) $row->unit_cost, (float) $row->total_cost, $row->user_name ?: 'Sistem', $row->notes ?: '',
@@ -230,7 +230,7 @@ class OperationalReportService
 
         return $this->definition('Laporan Vendor', 'Vendor', 'laporan-vendor', [
             'Kode Vendor', 'Vendor', 'Jenis', 'Status', 'Jumlah Batch', 'Nilai Pembibitan',
-            'Jumlah Transaksi Pakan', 'Biaya Pakan, Nutrisi & Obat',
+            'Jumlah Transaksi Penggunaan', 'Biaya Penggunaan Barang/Item',
         ], $query, fn (object $row): array => [
             $row->code, $row->name, $row->vendor_type_name,
             $row->status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif', (int) $row->batch_count,
@@ -267,7 +267,7 @@ class OperationalReportService
 
         return $this->definition('Laporan Tambak & Petak', 'Tambak & Petak', 'laporan-tambak-petak', [
             'Area', 'Tambak', 'Petak', 'Status', 'Batch Berstok', 'Jumlah Komoditas',
-            'Stok Saat Ini', 'Pembibitan', 'Kematian', 'Biaya Pakan, Nutrisi & Obat', 'Aktivitas Terakhir',
+            'Stok Saat Ini', 'Pembibitan', 'Kematian', 'Biaya Penggunaan Barang/Item', 'Aktivitas Terakhir',
         ], $query, fn (object $row): array => [
             $row->area_name ?: '-', $row->tambak_name ?: 'Tanpa Tambak', $row->petak_name,
             $row->status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif', (int) $row->batch_count,
@@ -464,19 +464,19 @@ class OperationalReportService
             'items' => (clone $query)->distinct()->count('ft.feed_item_id'),
             'locations' => (clone $query)->distinct()->count('ft.location_id'),
         ];
-        $usage = (clone $query)->select(['item.id', 'item.name', 'item.item_type', 'item.unit'])
+        $usage = (clone $query)->select(['item.id', 'item.name', 'item_type.name as item_type_name', 'item.unit'])
             ->selectRaw('COUNT(ft.id) as transaction_count, SUM(ft.feed_quantity) as total_quantity, SUM(ft.total_cost) as total_cost')
-            ->groupBy('item.id', 'item.name', 'item.item_type', 'item.unit')
+            ->groupBy('item.id', 'item.name', 'item_type.name', 'item.unit')
             ->orderByDesc('total_cost')->limit(10)->get()->map(fn (object $row): array => $this->row([
                 $this->cell($row->name, route('feed-items.show', $row->id)),
-                $this->cell(UserFacing::FEED_ITEM_TYPES[$row->item_type] ?? 'Lainnya', null, true, 'center'),
+                $this->cell($row->item_type_name, null, true, 'center'),
                 $this->cell($row->unit, null, false, 'center'),
                 $this->cell($row->transaction_count.' transaksi', null, false, 'right'),
                 $this->cell($this->quantity((float) $row->total_quantity).' '.$row->unit, null, false, 'right'),
                 $this->cell($this->money((float) $row->total_cost), null, false, 'right'),
             ]))->all();
         $rows = $this->rows(
-            $query->select(['ft.*', 'petak.name as petak_name', 'batch.batch_code', 'commodity.name as commodity_name', 'item.name as item_name', 'item.item_type', 'item.unit', 'vendor.name as vendor_name', 'creator.name as user_name'])
+            $query->select(['ft.*', 'petak.name as petak_name', 'batch.batch_code', 'commodity.name as commodity_name', 'item.name as item_name', 'item_type.name as item_type_name', 'item.unit', 'vendor.name as vendor_name', 'creator.name as user_name'])
                 ->orderByDesc('ft.transaction_date')->orderByDesc('ft.created_at')->orderByDesc('ft.id'),
             fn (object $row): array => $this->row([
                 $this->cell($row->transaction_number, route('feeding.show', $row->id), false, 'left', true),
@@ -484,7 +484,7 @@ class OperationalReportService
                 $this->cell($row->petak_name, null, false, 'center'),
                 $this->cell($row->batch_code ?: 'Seluruh Petak', null, false, 'center'),
                 $row->item_name,
-                $this->cell(UserFacing::FEED_ITEM_TYPES[$row->item_type] ?? 'Lainnya', null, true, 'center'),
+                $this->cell($row->item_type_name, null, true, 'center'),
                 $row->vendor_name ?: '—',
                 $this->cell($this->quantity((float) $row->feed_quantity).' '.$row->unit, null, false, 'right'),
                 $this->cell($this->money((float) $row->unit_cost), null, false, 'right'),
@@ -496,15 +496,15 @@ class OperationalReportService
             $perPage,
         );
 
-        $page = $this->page('Laporan Pakan, Nutrisi & Obat', 'Pantau penggunaan dan biaya pakan, nutrisi, atau obat yang tercatat.', route('reports.feeding'), $metrics, [
+        $page = $this->page('Laporan Penggunaan Barang/Item', 'Pantau penggunaan dan biaya Barang/Item yang tercatat.', route('reports.feeding'), $metrics, [
             $this->summary('Total Transaksi', $metrics['total'], null, 'feed'),
             $this->summary('Total Biaya', $this->money($metrics['cost']), null, 'coins'),
-            $this->summary('Kebutuhan Terpakai', $metrics['items'], null, 'package'),
+            $this->summary('Barang/Item Terpakai', $metrics['items'], null, 'package'),
             $this->summary('Petak Terlayani', $metrics['locations'], 'petak', 'map'),
         ], array_merge($this->transactionFilterFields(['location', 'commodity', 'vendor', 'user']), [
-            $this->selectField('type', 'Semua Jenis', $this->mapOptions(UserFacing::FEED_ITEM_TYPES)),
-            $this->selectField('feed_item_id', 'Semua Item', $this->options('feed_items', 'id', 'name')),
-        ]), ['No. Transaksi', 'Tanggal', 'Petak', 'Cakupan', 'Pakan / Nutrisi / Obat', 'Jenis', 'Vendor', 'Jumlah', 'Harga per Satuan', 'Total Biaya', 'Stok Saat Pencatatan', 'Dicatat Oleh'], $rows, 'Transaksi Pakan, Nutrisi & Obat');
+            $this->selectField('type', 'Semua Jenis Barang/Item', $this->options('item_types', 'id', 'name')),
+            $this->selectField('feed_item_id', 'Semua Barang/Item', $this->options('feed_items', 'id', 'name')),
+        ]), ['No. Transaksi', 'Tanggal', 'Petak', 'Cakupan', 'Barang/Item', 'Jenis Barang/Item', 'Vendor', 'Jumlah', 'Harga per Satuan', 'Total Biaya', 'Stok Saat Pencatatan', 'Dicatat Oleh'], $rows, 'Transaksi Penggunaan Barang/Item');
         $page['secondary'] = [
             'title' => 'Ringkasan per Item',
             'description' => 'Jumlah hanya dijumlahkan dalam item dengan satuan yang sama.',
@@ -555,7 +555,7 @@ class OperationalReportService
             $this->searchField('Cari vendor...'),
             $this->selectField('type', 'Semua Jenis', $this->options('vendor_types', 'id', 'name')),
             $this->statusField(), $this->dateField('date_from', 'Tanggal mulai'), $this->dateField('date_to', 'Tanggal selesai'),
-        ], ['Kode', 'Vendor', 'Jenis', 'Status', 'Jumlah Batch', 'Nilai Pembibitan', 'Transaksi Pakan', 'Biaya Pakan, Nutrisi & Obat'], $rows, 'Ringkasan Vendor', 'Filter tanggal hanya memengaruhi nilai pembibitan dan penggunaan pakan; jumlah Batch merupakan data master saat ini.');
+        ], ['Kode', 'Vendor', 'Jenis', 'Status', 'Jumlah Batch', 'Nilai Pembibitan', 'Transaksi Penggunaan', 'Biaya Penggunaan Barang/Item'], $rows, 'Ringkasan Vendor', 'Filter tanggal hanya memengaruhi nilai pembibitan dan penggunaan Barang/Item; jumlah Batch merupakan data master saat ini.');
     }
 
     /** @param array<string, mixed> $filters */
@@ -636,13 +636,13 @@ class OperationalReportService
             $this->summary('Total Petak', $metrics['total'], 'petak', 'map'),
             $this->summary('Petak Aktif', $metrics['active'], 'petak', 'check'),
             $this->summary('Stok Saat Ini', $this->quantity($metrics['current_stock']), 'ekor', 'seedling'),
-            $this->summary('Biaya Pakan, Nutrisi & Obat', $this->money($metrics['feeding_cost']), null, 'coins'),
+            $this->summary('Biaya Penggunaan Barang/Item', $this->money($metrics['feeding_cost']), null, 'coins'),
         ], [
             $this->searchField('Cari tambak atau petak...'),
             $this->selectField('area_id', 'Semua Area', $this->locationOptions('AREA')),
             $this->selectField('tambak_id', 'Semua Tambak', $this->locationOptions('TAMBAK')),
             $this->statusField(), $this->dateField('date_from', 'Tanggal mulai'), $this->dateField('date_to', 'Tanggal selesai'),
-        ], ['Area', 'Tambak', 'Petak', 'Status', 'Batch Aktif', 'Komoditas', 'Stok Saat Ini', 'Pembibitan', 'Kematian', 'Biaya Pakan, Nutrisi & Obat', 'Aktivitas Terakhir'], $rows, 'Ringkasan Operasional per Petak', 'Stok saat ini selalu menunjukkan posisi terkini; filter tanggal hanya memengaruhi pembibitan, kematian, biaya pakan, nutrisi, obat, dan aktivitas terakhir.');
+        ], ['Area', 'Tambak', 'Petak', 'Status', 'Batch Aktif', 'Komoditas', 'Stok Saat Ini', 'Pembibitan', 'Kematian', 'Biaya Penggunaan Barang/Item', 'Aktivitas Terakhir'], $rows, 'Ringkasan Operasional per Petak', 'Stok saat ini selalu menunjukkan posisi terkini; filter tanggal hanya memengaruhi pembibitan, kematian, penggunaan Barang/Item, dan aktivitas terakhir.');
     }
 
     /** @param array<string, mixed> $filters */
@@ -711,6 +711,7 @@ class OperationalReportService
             ->leftJoin('commodity_batches as batch', 'batch.id', '=', 'ft.batch_id')
             ->leftJoin('commodities as commodity', 'commodity.id', '=', 'batch.commodity_id')
             ->join('feed_items as item', 'item.id', '=', 'ft.feed_item_id')
+            ->join('item_types as item_type', 'item_type.id', '=', 'item.item_type_id')
             ->leftJoin('vendors as vendor', 'vendor.id', '=', 'ft.vendor_id')
             ->leftJoin('users as creator', 'creator.id', '=', 'ft.created_by');
         $this->feedingFilters($query, $filters);
@@ -892,10 +893,10 @@ class OperationalReportService
         }
 
         if ($filters['type']) {
-            $vendorTypeName = is_numeric($filters['type'])
-                ? DB::table('vendor_types')->where('id', $filters['type'])->value('name')
+            $lookupTypeName = is_numeric($filters['type'])
+                ? DB::table(request()->routeIs('reports.vendors*') ? 'vendor_types' : 'item_types')->where('id', $filters['type'])->value('name')
                 : null;
-            $parts[] = 'jenis '.($vendorTypeName ?? UserFacing::ADJUSTMENT_TYPES[$filters['type']] ?? UserFacing::FEED_ITEM_TYPES[$filters['type']] ?? 'Lainnya');
+            $parts[] = 'jenis '.($lookupTypeName ?? UserFacing::ADJUSTMENT_TYPES[$filters['type']] ?? 'Lainnya');
         }
         if ($filters['status']) {
             $parts[] = 'status '.($filters['status'] === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif');
@@ -975,7 +976,7 @@ class OperationalReportService
         $this->whereOptional($query, 'ft.vendor_id', $filters['vendor_id']);
         $this->whereOptional($query, 'ft.feed_item_id', $filters['feed_item_id']);
         $this->whereOptional($query, 'ft.created_by', $filters['user_id']);
-        $this->whereOptional($query, 'item.item_type', $filters['type']);
+        $this->whereOptional($query, 'item.item_type_id', $filters['type']);
         if ($filters['search'] !== '') {
             $search = '%'.$filters['search'].'%';
             $query->where(fn (Builder $q) => $q->where('ft.transaction_number', 'like', $search)->orWhere('item.name', 'like', $search)->orWhere('petak.name', 'like', $search)->orWhere('batch.batch_code', 'like', $search)->orWhere('commodity.name', 'like', $search)->orWhere('vendor.name', 'like', $search)->orWhere('creator.name', 'like', $search));
@@ -1066,7 +1067,7 @@ class OperationalReportService
             'commodity_id' => 'Komoditas',
             'batch_id' => 'Batch',
             'vendor_id' => 'Vendor',
-            'feed_item_id' => 'Pakan, Nutrisi, atau Obat',
+            'feed_item_id' => 'Barang/Item',
             'user_id' => 'Dicatat Oleh',
             'type' => 'Jenis',
             'status' => 'Status',
