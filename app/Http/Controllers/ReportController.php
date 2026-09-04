@@ -45,9 +45,19 @@ class ReportController extends Controller
         return $this->reportView($this->reports->adjustments($this->filters($request), perPage: PageSize::resolve($request)), $request);
     }
 
+    public function purchases(ReportFilterRequest $request): View
+    {
+        return $this->reportView($this->reports->purchases($this->filters($request), perPage: PageSize::resolve($request)), $request);
+    }
+
     public function feeding(ReportFilterRequest $request): View
     {
         return $this->reportView($this->reports->feeding($this->filters($request), perPage: PageSize::resolve($request)), $request);
+    }
+
+    public function items(ReportFilterRequest $request): View
+    {
+        return $this->reportView($this->reports->items($this->filters($request), perPage: PageSize::resolve($request)), $request);
     }
 
     public function vendors(ReportFilterRequest $request): View
@@ -105,9 +115,19 @@ class ReportController extends Controller
         return $this->download('adjustments', $request);
     }
 
+    public function exportPurchases(ReportFilterRequest $request): Response
+    {
+        return $this->download('purchases', $request);
+    }
+
     public function exportFeeding(ReportFilterRequest $request): Response
     {
         return $this->download('feeding', $request);
+    }
+
+    public function exportItems(ReportFilterRequest $request): Response
+    {
+        return $this->download('items', $request);
     }
 
     public function exportVendors(ReportFilterRequest $request): Response

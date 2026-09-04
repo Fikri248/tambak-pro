@@ -25,7 +25,6 @@ return [
                 ['label' => 'Pemindahan Stok', 'icon' => 'transfer', 'route' => 'movements.index', 'active' => 'movements.*', 'ability' => 'movements.view'],
                 ['label' => 'Perubahan Jumlah', 'icon' => 'adjustment', 'route' => 'adjustments.index', 'active' => 'adjustments.*', 'ability' => 'adjustments.view'],
                 ['label' => 'Pembelian Barang/Item', 'icon' => 'coins', 'route' => 'item-purchases.index', 'active' => 'item-purchases.*', 'ability' => 'item-purchases.view'],
-                ['label' => 'Penggunaan Barang/Item', 'icon' => 'feed', 'route' => 'feeding.index', 'active' => 'feeding.*', 'ability' => 'feeding.view'],
             ],
         ],
         [

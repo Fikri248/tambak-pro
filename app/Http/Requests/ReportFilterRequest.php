@@ -26,7 +26,7 @@ class ReportFilterRequest extends FormRequest
             'vendor_id' => ['nullable', 'integer', 'exists:vendors,id'],
             'feed_item_id' => ['nullable', 'integer', 'exists:feed_items,id'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'type' => $this->routeIs('reports.vendors*', 'reports.feeding*')
+            'type' => $this->routeIs('reports.vendors*', 'reports.feeding*', 'reports.items*', 'reports.purchases*')
                 ? ['nullable', 'integer', Rule::exists($this->routeIs('reports.vendors*') ? 'vendor_types' : 'item_types', 'id')]
                 : ['nullable', Rule::in([
                     'MORTALITY', 'LOSS', 'CORRECTION_IN', 'CORRECTION_OUT', 'OTHER',
@@ -55,7 +55,7 @@ class ReportFilterRequest extends FormRequest
             $type = (string) (VendorType::query()->where('code', $type)->value('id') ?? '');
         }
 
-        if ($type !== null && ! $this->routeIs('reports.vendors*', 'reports.feeding*')) {
+        if ($type !== null && ! $this->routeIs('reports.vendors*', 'reports.feeding*', 'reports.items*', 'reports.purchases*')) {
             $type = mb_strtoupper($type);
         }
 

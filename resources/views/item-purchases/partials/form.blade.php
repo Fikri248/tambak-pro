@@ -2,6 +2,8 @@
     $isEditing = isset($itemPurchase);
     $selectedItem = old('feed_item_id', $itemPurchase->feed_item_id ?? '');
     $selectedVendor = old('vendor_id', $itemPurchase->vendor_id ?? '');
+    $quantityValue = $isEditing ? \App\Support\DecimalDisplay::normalize($itemPurchase->quantity) : null;
+    $unitCostValue = $isEditing ? \App\Support\DecimalDisplay::normalize($itemPurchase->unit_cost) : null;
 @endphp
 
 <form method="POST" action="{{ $isEditing ? route('item-purchases.update', $itemPurchase) : route('item-purchases.store') }}" class="space-y-6" data-purchase-form>
@@ -15,7 +17,7 @@
         <x-form.select name="feed_item_id" label="Barang/Item" required data-purchase-item>
             <option value="">Pilih Barang/Item</option>
             @foreach ($feedItems as $item)
-                <option value="{{ $item->id }}" data-unit="{{ $item->unit }}" data-price="{{ $item->default_price }}" data-vendor="{{ $item->default_vendor_id }}" @selected((string) $selectedItem === (string) $item->id)>{{ $item->code }} — {{ $item->name }} — {{ $item->itemType->name }}{{ $item->status !== 'ACTIVE' ? ' (Tidak aktif)' : '' }}</option>
+                <option value="{{ $item->id }}" data-unit="{{ $item->unit }}" data-price="{{ \App\Support\DecimalDisplay::normalize($item->default_price) }}" data-vendor="{{ $item->default_vendor_id }}" @selected((string) $selectedItem === (string) $item->id)>{{ $item->code }} — {{ $item->name }} — {{ $item->itemType->name }}{{ $item->status !== 'ACTIVE' ? ' (Tidak aktif)' : '' }}</option>
             @endforeach
         </x-form.select>
         <x-form.select name="vendor_id" label="Vendor" required data-purchase-vendor>
@@ -25,8 +27,8 @@
             @endforeach
         </x-form.select>
 
-        <x-form.input name="quantity" label="Jumlah" type="number" :value="$itemPurchase->quantity ?? null" min="0.001" step="0.001" required inputmode="decimal" data-purchase-quantity />
-        <x-form.input name="unit_cost" label="Harga Satuan" type="number" :value="$itemPurchase->unit_cost ?? null" min="0" step="0.0001" required inputmode="decimal" data-purchase-cost />
+        <x-form.input name="quantity" label="Jumlah" type="number" :value="$quantityValue" min="0.001" step="0.001" required inputmode="decimal" data-purchase-quantity />
+        <x-form.input name="unit_cost" label="Harga Satuan" type="number" :value="$unitCostValue" min="0" step="0.0001" required inputmode="decimal" data-purchase-cost />
     </div>
 
     <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3">

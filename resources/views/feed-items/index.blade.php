@@ -92,7 +92,7 @@
                                         @endif
                                     </td>
                                     <td class="px-5 py-3.5 text-center text-neutral-600">{{ $feedItem->unit }}</td>
-                                    <td class="px-5 py-3.5 text-right font-medium tabular-nums text-neutral-900">Rp{{ number_format((float) $feedItem->default_price, 0, ',', '.') }}</td>
+                                    <td class="px-5 py-3.5 text-right font-medium tabular-nums text-neutral-900">Rp{{ \App\Support\DecimalDisplay::localized($feedItem->default_price) }}</td>
                                     <td class="px-5 py-3.5"><x-badge>{{ $feedItem->status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif' }}</x-badge></td>
                                     <td class="px-5 py-3 pr-6">
                                         <div class="flex justify-end gap-1">

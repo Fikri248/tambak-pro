@@ -4,6 +4,7 @@ namespace App\Services\Reports;
 
 use App\Exports\Reports\ReportExportDefinition;
 use App\Models\VendorType;
+use App\Support\DecimalDisplay;
 use App\Support\PageSize;
 use App\Support\UserFacing;
 use Carbon\Carbon;
@@ -20,7 +21,9 @@ class OperationalReportService
         'stocking' => 'laporan-pembibitan',
         'movements' => 'laporan-pemindahan-bibit',
         'adjustments' => 'laporan-perubahan-jumlah',
+        'purchases' => 'laporan-pembelian-barang-item',
         'feeding' => 'laporan-pakan',
+        'items' => 'laporan-barang-item',
         'vendors' => 'laporan-vendor',
         'commodities' => 'laporan-komoditas',
         'locations' => 'laporan-tambak-petak',
@@ -57,7 +60,7 @@ class OperationalReportService
                 ->join('commodity_batches as batch', 'batch.id', '=', 'ps.batch_id')
                 ->where('ps.quantity', '>', 0)
                 ->sum(DB::raw('ps.quantity * batch.unit_cost')),
-            'feeding_cost' => (float) DB::table('feeding_transactions')->sum('total_cost'),
+            'purchase_cost' => (float) DB::table('item_purchase_transactions')->sum('total_cost'),
             'mortality' => abs((float) DB::table('stock_adjustments')->where('adjustment_type', 'MORTALITY')->sum('quantity_change')),
         ];
 
@@ -66,7 +69,7 @@ class OperationalReportService
             'summaryCards' => [
                 $this->summary('Total Stok Saat Ini', $this->quantity($metrics['current_stock']), 'ekor', 'seedling'),
                 $this->summary('Nilai Stok Saat Ini', $this->money($metrics['stock_value']), null, 'coins'),
-                $this->summary('Biaya Penggunaan Barang/Item', $this->money($metrics['feeding_cost']), null, 'feed'),
+                $this->summary('Nilai Pembelian Barang/Item', $this->decimalMoney($metrics['purchase_cost']), null, 'coins'),
                 $this->summary('Kematian Tercatat', $this->quantity($metrics['mortality']), 'ekor', 'adjustment'),
             ],
             'reportCards' => [
@@ -74,7 +77,8 @@ class OperationalReportService
                 $this->reportCard('Pembibitan', 'Riwayat bibit masuk dan nilai pembibitan.', route('reports.stocking'), DB::table('stocking_transactions')->count().' transaksi', 'seedling'),
                 $this->reportCard('Pemindahan Stok', 'Pantau perpindahan stok antarpetak.', route('reports.movements'), DB::table('stock_movements')->count().' transaksi', 'transfer'),
                 $this->reportCard('Perubahan Jumlah', 'Kematian, kehilangan, dan penyesuaian stok.', route('reports.adjustments'), DB::table('stock_adjustments')->count().' transaksi', 'adjustment'),
-                $this->reportCard('Penggunaan Barang/Item', 'Penggunaan Barang/Item dan biaya tercatat.', route('reports.feeding'), $this->money($metrics['feeding_cost']), 'feed'),
+                $this->reportCard('Pembelian Barang/Item', 'Riwayat pengadaan Barang/Item dan biaya tercatat.', route('reports.purchases'), DB::table('item_purchase_transactions')->count().' transaksi', 'coins'),
+                $this->reportCard('Barang/Item', 'Daftar master Barang/Item, jenis, Vendor default, dan status.', route('reports.items'), DB::table('feed_items')->count().' item', 'feed'),
                 $this->reportCard('Vendor', 'Ringkasan keterlibatan Vendor operasional.', route('reports.vendors'), DB::table('vendors')->count().' Vendor', 'truck'),
                 $this->reportCard('Komoditas', 'Posisi stok dan aktivitas per komoditas.', route('reports.commodities'), DB::table('commodities')->count().' komoditas', 'package'),
                 $this->reportCard('Tambak & Petak', 'Ringkasan operasional berdasarkan lokasi.', route('reports.locations'), DB::table('locations')->where('location_type', 'PETAK')->count().' petak', 'map'),
@@ -90,7 +94,9 @@ class OperationalReportService
             'stocking' => $this->stockingExport($filters),
             'movements' => $this->movementExport($filters),
             'adjustments' => $this->adjustmentExport($filters),
+            'purchases' => $this->purchaseExport($filters),
             'feeding' => $this->feedingExport($filters),
+            'items' => $this->itemExport($filters),
             'vendors' => $this->vendorExport($filters),
             'commodities' => $this->commodityExport($filters),
             'locations' => $this->locationExport($filters),
@@ -106,7 +112,9 @@ class OperationalReportService
             'stocking' => $this->stocking($filters, $paginate, $perPage),
             'movements' => $this->movements($filters, $paginate, $perPage),
             'adjustments' => $this->adjustments($filters, $paginate, $perPage),
+            'purchases' => $this->purchases($filters, $paginate, $perPage),
             'feeding' => $this->feeding($filters, $paginate, $perPage),
+            'items' => $this->items($filters, $paginate, $perPage),
             'vendors' => $this->vendors($filters, $paginate, $perPage),
             'commodities' => $this->commodities($filters, $paginate, $perPage),
             'locations' => $this->locations($filters, $paginate, $perPage),
@@ -200,6 +208,27 @@ class OperationalReportService
     }
 
     /** @param array<string, mixed> $filters */
+    private function purchaseExport(array $filters): ReportExportDefinition
+    {
+        $query = $this->purchaseQuery($filters)
+            ->select([
+                'purchase.transaction_number', 'purchase.transaction_date', 'item.name as item_name',
+                'item_type.name as item_type_name', 'vendor.name as vendor_name', 'purchase.quantity',
+                'item.unit', 'purchase.unit_cost', 'purchase.total_cost', 'creator.name as user_name',
+            ])
+            ->orderByDesc('purchase.transaction_date')->orderByDesc('purchase.created_at')->orderByDesc('purchase.id');
+
+        return $this->definition('Laporan Pembelian Barang/Item', 'Pembelian Barang Item', 'laporan-pembelian-barang-item', [
+            'No. Transaksi', 'Tanggal', 'Barang/Item', 'Jenis Barang/Item', 'Vendor',
+            'Jumlah', 'Satuan', 'Harga Satuan', 'Total Biaya', 'Dicatat Oleh',
+        ], $query, fn (object $row): array => [
+            $row->transaction_number, Carbon::parse($row->transaction_date)->format('Y-m-d H:i:s'),
+            $row->item_name, $row->item_type_name, $row->vendor_name, (float) $row->quantity,
+            $row->unit, (float) $row->unit_cost, (float) $row->total_cost, $row->user_name ?: 'Sistem',
+        ], ['F' => '#,##0.###', 'H' => '#,##0.####', 'I' => '#,##0.##'], $filters);
+    }
+
+    /** @param array<string, mixed> $filters */
     private function feedingExport(array $filters): ReportExportDefinition
     {
         $query = $this->feedingQuery($filters)
@@ -218,6 +247,24 @@ class OperationalReportService
             $row->stock_unit ?: 'ekor', (float) $row->feed_quantity, $row->item_unit,
             (float) $row->unit_cost, (float) $row->total_cost, $row->user_name ?: 'Sistem', $row->notes ?: '',
         ], ['J' => '#,##0.000', 'L' => '#,##0.000', 'N' => '#,##0.00', 'O' => '#,##0.00'], $filters);
+    }
+
+    /** @param array<string, mixed> $filters */
+    private function itemExport(array $filters): ReportExportDefinition
+    {
+        $query = $this->itemQuery($filters)
+            ->select([
+                'item.code', 'item.name', 'item_type.name as item_type_name', 'item.unit',
+                'vendor.name as vendor_name', 'item.default_price', 'item.status',
+            ])
+            ->orderBy('item.name')->orderBy('item.code')->orderBy('item.id');
+
+        return $this->definition('Laporan Barang/Item', 'Barang Item', 'laporan-barang-item', [
+            'Kode', 'Nama Barang/Item', 'Jenis Barang/Item', 'Satuan', 'Vendor Default', 'Harga Default', 'Status',
+        ], $query, fn (object $row): array => [
+            $row->code, $row->name, $row->item_type_name, $row->unit, $row->vendor_name ?: '-',
+            (float) $row->default_price, $row->status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif',
+        ], ['F' => '#,##0.####'], $filters);
     }
 
     /** @param array<string, mixed> $filters */
@@ -454,6 +501,54 @@ class OperationalReportService
     }
 
     /** @param array<string, mixed> $filters */
+    public function purchases(array $filters, bool $paginate = true, int $perPage = PageSize::DEFAULT): array
+    {
+        $query = $this->purchaseQuery($filters);
+        $metrics = [
+            'total' => (clone $query)->count('purchase.id'),
+            'cost' => (float) (clone $query)->sum('purchase.total_cost'),
+            'items' => (clone $query)->distinct()->count('purchase.feed_item_id'),
+            'vendors' => (clone $query)->distinct()->count('purchase.vendor_id'),
+        ];
+        $rows = $this->rows(
+            $query->select([
+                'purchase.*', 'item.name as item_name', 'item.unit', 'item_type.name as item_type_name',
+                'vendor.name as vendor_name', 'creator.name as user_name',
+            ])->orderByDesc('purchase.transaction_date')->orderByDesc('purchase.created_at')->orderByDesc('purchase.id'),
+            fn (object $row): array => $this->row([
+                $this->cell($row->transaction_number, route('item-purchases.show', $row->id), false, 'left', true),
+                $this->cell(Carbon::parse($row->transaction_date)->locale('id')->translatedFormat('d M Y, H:i'), null, false, 'center'),
+                $row->item_name,
+                $this->cell($row->item_type_name, null, true, 'center'),
+                $row->vendor_name,
+                $this->cell(DecimalDisplay::localized((string) $row->quantity).' '.$row->unit, null, false, 'right'),
+                $this->cell($this->decimalMoney($row->unit_cost), null, false, 'right'),
+                $this->cell($this->decimalMoney($row->total_cost), null, false, 'right'),
+                $row->user_name ?: 'Sistem',
+            ]),
+            $paginate,
+            $perPage,
+        );
+
+        return $this->page(
+            'Laporan Pembelian Barang/Item',
+            'Rekap transaksi pengadaan Barang/Item tanpa mengubah saldo inventori.',
+            route('reports.purchases'),
+            $metrics,
+            [
+                $this->summary('Total Transaksi', $metrics['total'], null, 'history'),
+                $this->summary('Total Biaya Pembelian', $this->decimalMoney($metrics['cost']), null, 'coins'),
+                $this->summary('Barang/Item Dibeli', $metrics['items'], null, 'package'),
+                $this->summary('Vendor Terlibat', $metrics['vendors'], null, 'truck'),
+            ],
+            $this->itemTransactionFilterFields(),
+            ['No. Transaksi', 'Tanggal', 'Barang/Item', 'Jenis Barang/Item', 'Vendor', 'Jumlah', 'Harga Satuan', 'Total Biaya', 'Dicatat Oleh'],
+            $rows,
+            'Transaksi Pembelian Barang/Item',
+        );
+    }
+
+    /** @param array<string, mixed> $filters */
     public function feeding(array $filters, bool $paginate = true, int $perPage = PageSize::DEFAULT): array
     {
         $query = $this->feedingQuery($filters);
@@ -513,6 +608,52 @@ class OperationalReportService
         ];
 
         return $page;
+    }
+
+    /** @param array<string, mixed> $filters */
+    public function items(array $filters, bool $paginate = true, int $perPage = PageSize::DEFAULT): array
+    {
+        $query = $this->itemQuery($filters);
+        $metrics = [
+            'total' => (clone $query)->count('item.id'),
+            'active' => (clone $query)->where('item.status', 'ACTIVE')->count('item.id'),
+            'inactive' => (clone $query)->where('item.status', 'INACTIVE')->count('item.id'),
+            'types' => (clone $query)->distinct()->count('item.item_type_id'),
+        ];
+        $rows = $this->rows(
+            $query->select([
+                'item.id', 'item.code', 'item.name', 'item.unit', 'item.default_price', 'item.status',
+                'item_type.name as item_type_name', 'vendor.name as vendor_name',
+            ])->orderBy('item.name')->orderBy('item.code')->orderBy('item.id'),
+            fn (object $row): array => $this->row([
+                $this->cell($row->code, route('feed-items.show', $row->id), false, 'left', true),
+                $row->name,
+                $this->cell($row->item_type_name, null, true, 'center'),
+                $this->cell($row->unit, null, false, 'center'),
+                $row->vendor_name ?: '—',
+                $this->cell($this->decimalMoney($row->default_price), null, false, 'right'),
+                $this->cell($row->status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif', null, true, 'center'),
+            ]),
+            $paginate,
+            $perPage,
+        );
+
+        return $this->page(
+            'Laporan Barang/Item',
+            'Daftar master Barang/Item beserta jenis, satuan, Vendor default, harga default, dan status.',
+            route('reports.items'),
+            $metrics,
+            [
+                $this->summary('Total Barang/Item', $metrics['total'], null, 'package'),
+                $this->summary('Aktif', $metrics['active'], null, 'check'),
+                $this->summary('Tidak Aktif', $metrics['inactive'], null, 'power'),
+                $this->summary('Jumlah Jenis', $metrics['types'], null, 'feed'),
+            ],
+            $this->itemFilterFields(),
+            ['Kode', 'Nama Barang/Item', 'Jenis Barang/Item', 'Satuan', 'Vendor Default', 'Harga Default', 'Status'],
+            $rows,
+            'Daftar Barang/Item',
+        );
     }
 
     /** @param array<string, mixed> $filters */
@@ -703,6 +844,19 @@ class OperationalReportService
     }
 
     /** @param array<string, mixed> $filters */
+    private function purchaseQuery(array $filters): Builder
+    {
+        $query = DB::table('item_purchase_transactions as purchase')
+            ->join('feed_items as item', 'item.id', '=', 'purchase.feed_item_id')
+            ->join('item_types as item_type', 'item_type.id', '=', 'item.item_type_id')
+            ->join('vendors as vendor', 'vendor.id', '=', 'purchase.vendor_id')
+            ->leftJoin('users as creator', 'creator.id', '=', 'purchase.created_by');
+        $this->purchaseFilters($query, $filters);
+
+        return $query;
+    }
+
+    /** @param array<string, mixed> $filters */
     private function feedingQuery(array $filters): Builder
     {
         $query = DB::table('feeding_transactions as ft')
@@ -715,6 +869,17 @@ class OperationalReportService
             ->leftJoin('vendors as vendor', 'vendor.id', '=', 'ft.vendor_id')
             ->leftJoin('users as creator', 'creator.id', '=', 'ft.created_by');
         $this->feedingFilters($query, $filters);
+
+        return $query;
+    }
+
+    /** @param array<string, mixed> $filters */
+    private function itemQuery(array $filters): Builder
+    {
+        $query = DB::table('feed_items as item')
+            ->join('item_types as item_type', 'item_type.id', '=', 'item.item_type_id')
+            ->leftJoin('vendors as vendor', 'vendor.id', '=', 'item.default_vendor_id');
+        $this->itemFilters($query, $filters);
 
         return $query;
     }
@@ -968,6 +1133,25 @@ class OperationalReportService
     }
 
     /** @param array<string, mixed> $filters */
+    private function purchaseFilters(Builder $query, array $filters): void
+    {
+        $this->dateFilters($query, 'purchase', $filters);
+        $this->whereOptional($query, 'purchase.feed_item_id', $filters['feed_item_id']);
+        $this->whereOptional($query, 'item.item_type_id', $filters['type']);
+        $this->whereOptional($query, 'purchase.vendor_id', $filters['vendor_id']);
+        $this->whereOptional($query, 'purchase.created_by', $filters['user_id']);
+        if ($filters['search'] !== '') {
+            $search = '%'.$filters['search'].'%';
+            $query->where(fn (Builder $q) => $q->where('purchase.transaction_number', 'like', $search)
+                ->orWhere('item.code', 'like', $search)
+                ->orWhere('item.name', 'like', $search)
+                ->orWhere('item_type.name', 'like', $search)
+                ->orWhere('vendor.name', 'like', $search)
+                ->orWhere('creator.name', 'like', $search));
+        }
+    }
+
+    /** @param array<string, mixed> $filters */
     private function feedingFilters(Builder $query, array $filters): void
     {
         $this->dateFilters($query, 'ft', $filters);
@@ -980,6 +1164,21 @@ class OperationalReportService
         if ($filters['search'] !== '') {
             $search = '%'.$filters['search'].'%';
             $query->where(fn (Builder $q) => $q->where('ft.transaction_number', 'like', $search)->orWhere('item.name', 'like', $search)->orWhere('petak.name', 'like', $search)->orWhere('batch.batch_code', 'like', $search)->orWhere('commodity.name', 'like', $search)->orWhere('vendor.name', 'like', $search)->orWhere('creator.name', 'like', $search));
+        }
+    }
+
+    /** @param array<string, mixed> $filters */
+    private function itemFilters(Builder $query, array $filters): void
+    {
+        $this->whereOptional($query, 'item.item_type_id', $filters['type']);
+        $this->whereOptional($query, 'item.default_vendor_id', $filters['vendor_id']);
+        $this->whereOptional($query, 'item.status', $filters['status']);
+        if ($filters['search'] !== '') {
+            $search = '%'.$filters['search'].'%';
+            $query->where(fn (Builder $q) => $q->where('item.code', 'like', $search)
+                ->orWhere('item.name', 'like', $search)
+                ->orWhere('item_type.name', 'like', $search)
+                ->orWhere('vendor.name', 'like', $search));
         }
     }
 
@@ -1129,6 +1328,11 @@ class OperationalReportService
         return 'Rp'.number_format($value, 0, ',', '.');
     }
 
+    private function decimalMoney(string|int|float|null $value): string
+    {
+        return 'Rp'.DecimalDisplay::localized($value !== null ? (string) $value : null, '0');
+    }
+
     /** @return array<string, mixed> */
     private function searchField(string $placeholder): array
     {
@@ -1166,6 +1370,31 @@ class OperationalReportService
                 ->where('ps.quantity', '>', 0)
                 ->distinct()->orderBy('batch.batch_code')->get(['batch.id', 'batch.batch_code'])
                 ->map(fn (object $row): array => ['value' => $row->id, 'label' => $row->batch_code])->all()),
+        ];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function itemFilterFields(): array
+    {
+        return [
+            $this->searchField('Cari kode, Barang/Item, jenis, atau Vendor default...'),
+            $this->selectField('type', 'Semua Jenis Barang/Item', $this->options('item_types', 'id', 'name')),
+            $this->selectField('vendor_id', 'Semua Vendor Default', $this->options('vendors', 'id', 'name')),
+            $this->statusField(),
+        ];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function itemTransactionFilterFields(): array
+    {
+        return [
+            $this->searchField('Cari transaksi, Barang/Item, jenis, Vendor, atau pencatat...'),
+            $this->selectField('feed_item_id', 'Semua Barang/Item', $this->options('feed_items', 'id', 'name')),
+            $this->selectField('type', 'Semua Jenis Barang/Item', $this->options('item_types', 'id', 'name')),
+            $this->selectField('vendor_id', 'Semua Vendor', $this->options('vendors', 'id', 'name')),
+            $this->selectField('user_id', 'Semua Pencatat', $this->options('users', 'id', 'name')),
+            $this->dateField('date_from', 'Tanggal mulai'),
+            $this->dateField('date_to', 'Tanggal selesai'),
         ];
     }
 

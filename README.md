@@ -365,7 +365,7 @@ Menggabungkan Pembibitan, Pemindahan Stok, Perubahan Jumlah, Pembelian Barang/It
 
 ### Laporan Operasional
 
-Menyediakan delapan laporan: Stok Saat Ini, Pembibitan, Pemindahan Stok, Perubahan Jumlah, Penggunaan Barang/Item, Vendor, Komoditas, serta Tambak & Petak. Setiap laporan mendukung filter yang relevan, tampilan web, Print, PDF, CSV, dan XLSX. Laporan pembelian belum ditambahkan karena transaksi pembelian belum terhubung ke inventori atau akuntansi.
+Menu Laporan Operasional menampilkan sembilan laporan: Stok Saat Ini, Pembibitan, Pemindahan Stok, Perubahan Jumlah, Pembelian Barang/Item, Barang/Item, Vendor, Komoditas, serta Tambak & Petak. Setiap laporan mendukung filter yang relevan, tampilan web, pilihan 25/50/100/500 baris, Print, PDF, CSV, dan XLSX. Laporan Barang/Item membaca master `feed_items`, sedangkan Laporan Pembelian Barang/Item membaca catatan pengadaan tanpa menciptakan saldo inventori atau posting akuntansi. Secara backend tersedia sepuluh keluarga laporan: implementasi Laporan Penggunaan Barang/Item tetap dipertahankan untuk kompatibilitas riwayat dan akses langsung, tetapi tidak lagi ditampilkan sebagai kartu pada menu Laporan Operasional.
 
 ## Hak Akses dan Jobdesk
 

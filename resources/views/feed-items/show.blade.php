@@ -41,7 +41,7 @@
         <x-flash-message />
 
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Ringkasan {{ $feedItem->name }}">
-            <x-kpi-card label="Harga Acuan per Satuan" :value="'Rp'.number_format((float) $feedItem->default_price, 0, ',', '.')" icon="coins" />
+            <x-kpi-card label="Harga Acuan per Satuan" :value="'Rp'.\App\Support\DecimalDisplay::localized($feedItem->default_price)" icon="coins" />
             <x-kpi-card label="Vendor Utama" :value="$feedItem->defaultVendor?->name ?? 'Tanpa Vendor'" icon="truck" />
             <x-kpi-card label="Jumlah Penggunaan" :value="number_format($usageCount, 0, ',', '.')" suffix="transaksi" icon="history" />
             <x-kpi-card label="Total Dipakai" :value="$formatQuantity($totalUsage)" :suffix="$feedItem->unit" icon="feed" />
@@ -55,7 +55,7 @@
                 <div><dt class="text-xs text-neutral-500">Jenis Barang/Item</dt><dd class="mt-1 text-sm font-medium text-neutral-900">{{ $feedItem->itemType->name }}</dd></div>
                 <div><dt class="text-xs text-neutral-500">Satuan</dt><dd class="mt-1 text-sm font-medium text-neutral-900">{{ $feedItem->unit }}</dd></div>
                 <div class="sm:col-span-2"><dt class="text-xs text-neutral-500">Vendor Utama</dt><dd class="mt-1 text-sm text-neutral-800">{{ $feedItem->defaultVendor?->name ?? 'Tanpa Vendor utama' }}@if ($feedItem->defaultVendor?->status === 'INACTIVE') <span class="text-neutral-500">(Tidak aktif)</span>@endif</dd></div>
-                <div><dt class="text-xs text-neutral-500">Harga Acuan per Satuan</dt><dd class="mt-1 text-sm font-medium tabular-nums text-neutral-900">Rp{{ number_format((float) $feedItem->default_price, 0, ',', '.') }}</dd></div>
+                <div><dt class="text-xs text-neutral-500">Harga Acuan per Satuan</dt><dd class="mt-1 text-sm font-medium tabular-nums text-neutral-900">Rp{{ \App\Support\DecimalDisplay::localized($feedItem->default_price) }}</dd></div>
                 <div><dt class="text-xs text-neutral-500">Status</dt><dd class="mt-1 text-sm font-medium text-neutral-900">{{ $feedItem->status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif' }}</dd></div>
                 <div><dt class="text-xs text-neutral-500">Dibuat</dt><dd class="mt-1 text-sm text-neutral-800">{{ $feedItem->created_at->locale('id')->translatedFormat('d M Y, H:i') }}</dd></div>
                 <div><dt class="text-xs text-neutral-500">Terakhir diperbarui</dt><dd class="mt-1 text-sm text-neutral-800">{{ $feedItem->updated_at->locale('id')->translatedFormat('d M Y, H:i') }}</dd></div>

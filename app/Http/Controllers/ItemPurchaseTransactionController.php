@@ -60,7 +60,7 @@ class ItemPurchaseTransactionController extends Controller
 
         return view('item-purchases.index', [
             'transactions' => $transactions,
-            'summary' => ['total' => (clone $summaryQuery)->count(), 'cost' => (float) (clone $summaryQuery)->sum('total_cost')],
+            'summary' => ['total' => (clone $summaryQuery)->count(), 'cost' => (string) (clone $summaryQuery)->sum('total_cost')],
             'filters' => compact('search', 'itemId', 'vendorId', 'typeId', 'dateFrom', 'dateTo'),
             'feedItems' => FeedItem::query()->orderBy('name')->get(['id', 'name']),
             'vendors' => Vendor::query()->orderBy('name')->get(['id', 'name']),

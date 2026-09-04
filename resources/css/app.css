@@ -101,6 +101,17 @@
         @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900;
     }
 
+    input[type='number'] {
+        -moz-appearance: textfield;
+        appearance: textfield;
+    }
+
+    input[type='number']::-webkit-inner-spin-button,
+    input[type='number']::-webkit-outer-spin-button {
+        margin: 0;
+        -webkit-appearance: none;
+    }
+
     ::selection {
         @apply bg-neutral-300 text-neutral-950;
     }
@@ -399,6 +410,10 @@
         line-height: 1.375;
     }
 
+    [data-responsive-table="report-items"] :is(th, td):first-child {
+        width: 7rem;
+    }
+
     [data-responsive-table] :is(.font-mono, .tabular-nums) {
         overflow-wrap: normal;
     }
@@ -432,6 +447,9 @@
     [data-responsive-table="report-adjustments"] :is(th, td):nth-child(7),
     [data-responsive-table="report-adjustments"] :is(th, td):nth-child(10),
     [data-responsive-table="report-adjustments"] :is(th, td):nth-child(11),
+    [data-responsive-table="report-purchases"] :is(th, td):nth-child(4),
+    [data-responsive-table="report-purchases"] :is(th, td):nth-child(7),
+    [data-responsive-table="report-purchases"] :is(th, td):nth-child(9),
     [data-responsive-table="report-feeding"] :is(th, td):nth-child(4),
     [data-responsive-table="report-feeding"] :is(th, td):nth-child(6),
     [data-responsive-table="report-feeding"] :is(th, td):nth-child(7),
@@ -482,6 +500,7 @@
     [data-responsive-table="report-movements"] :is(th, td):nth-child(4),
     [data-responsive-table="report-adjustments"] :is(th, td):nth-child(5),
     [data-responsive-table="report-adjustments"] :is(th, td):nth-child(6),
+    [data-responsive-table="report-purchases"] :is(th, td):nth-child(4),
     [data-responsive-table="report-feeding"] :is(th, td):nth-child(4),
     [data-responsive-table="report-feeding"] :is(th, td):nth-child(6),
     [data-responsive-table="report-vendors"] :is(th, td):nth-child(6),
@@ -512,6 +531,7 @@
     [data-responsive-table="report-stocking"] :is(th, td):nth-child(10),
     [data-responsive-table="report-movements"] :is(th, td):nth-child(8),
     [data-responsive-table="report-adjustments"] :is(th, td):nth-child(7),
+    [data-responsive-table="report-purchases"] :is(th, td):nth-child(7),
     [data-responsive-table="report-feeding"] :is(th, td):nth-child(7),
     [data-responsive-table="report-vendors"] :is(th, td):nth-child(8),
     [data-responsive-table="report-commodities"] :is(th, td):nth-child(4),

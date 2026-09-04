@@ -6,6 +6,7 @@ use App\Http\Requests\TransactionHistoryRequest;
 use App\Models\Commodity;
 use App\Models\Location;
 use App\Models\User;
+use App\Support\DecimalDisplay;
 use App\Support\PageSize;
 use App\Support\UserFacing;
 use Carbon\Carbon;
@@ -392,8 +393,8 @@ class TransactionHistoryController extends Controller
             $row->type_label = UserFacing::TRANSACTION_TYPES[$row->type];
             $row->transaction_date = Carbon::parse($row->transaction_date);
             $row->created_at = Carbon::parse($row->created_at);
-            $row->quantity = (float) $row->quantity;
-            $row->amount = $row->amount !== null ? (float) $row->amount : null;
+            $row->quantity = DecimalDisplay::normalize((string) $row->quantity);
+            $row->amount = $row->amount !== null ? DecimalDisplay::normalize((string) $row->amount) : null;
             $row->activity = $this->activity($row);
             $row->location_display = $row->type === 'PURCHASE' ? $row->vendor_name : ($row->secondary_location_name
                 ? "{$row->location_name} → {$row->secondary_location_name}"

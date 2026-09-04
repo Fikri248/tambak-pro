@@ -236,7 +236,9 @@ Route::middleware(['auth', 'active'])->group(function () {
             'pembibitan' => 'stocking',
             'mutasi' => 'movements',
             'perubahan-jumlah' => 'adjustments',
+            'pembelian-barang-item' => 'purchases',
             'pakan' => 'feeding',
+            'barang-item' => 'items',
             'vendor' => 'vendors',
             'komoditas' => 'commodities',
             'tambak' => 'locations',
@@ -248,7 +250,9 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/pembibitan/export', 'exportStocking')->name('stocking.export');
         Route::get('/mutasi/export', 'exportMovements')->name('movements.export');
         Route::get('/perubahan-jumlah/export', 'exportAdjustments')->name('adjustments.export');
+        Route::get('/pembelian-barang-item/export', 'exportPurchases')->name('purchases.export');
         Route::get('/pakan/export', 'exportFeeding')->name('feeding.export');
+        Route::get('/barang-item/export', 'exportItems')->name('items.export');
         Route::get('/vendor/export', 'exportVendors')->name('vendors.export');
         Route::get('/komoditas/export', 'exportCommodities')->name('commodities.export');
         Route::get('/tambak/export', 'exportLocations')->name('locations.export');
@@ -256,7 +260,9 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/pembibitan', 'stocking')->name('stocking');
         Route::get('/mutasi', 'movements')->name('movements');
         Route::get('/perubahan-jumlah', 'adjustments')->name('adjustments');
+        Route::get('/pembelian-barang-item', 'purchases')->name('purchases');
         Route::get('/pakan', 'feeding')->name('feeding');
+        Route::get('/barang-item', 'items')->name('items');
         Route::get('/vendor', 'vendors')->name('vendors');
         Route::get('/komoditas', 'commodities')->name('commodities');
         Route::get('/tambak', 'locations')->name('locations');

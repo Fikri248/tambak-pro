@@ -10,9 +10,9 @@
         </div>
         <x-flash-message />
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <x-kpi-card label="Jumlah" :value="number_format((float) $itemPurchase->quantity, 3, ',', '.')" :suffix="$itemPurchase->feedItem->unit" icon="package" />
-            <x-kpi-card label="Harga Satuan" :value="'Rp'.number_format((float) $itemPurchase->unit_cost, 0, ',', '.')" icon="coins" />
-            <x-kpi-card label="Total Biaya" :value="'Rp'.number_format((float) $itemPurchase->total_cost, 0, ',', '.')" icon="coins" />
+            <x-kpi-card label="Jumlah" :value="\App\Support\DecimalDisplay::localized($itemPurchase->quantity)" :suffix="$itemPurchase->feedItem->unit" icon="package" />
+            <x-kpi-card label="Harga Satuan" :value="'Rp'.\App\Support\DecimalDisplay::localized($itemPurchase->unit_cost)" icon="coins" />
+            <x-kpi-card label="Total Biaya" :value="'Rp'.\App\Support\DecimalDisplay::localized($itemPurchase->total_cost)" icon="coins" />
             <x-kpi-card label="Dicatat Oleh" :value="$itemPurchase->createdBy->name" icon="user" />
         </section>
         <x-card>

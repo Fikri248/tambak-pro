@@ -2,6 +2,7 @@
     $isEditing = isset($feedItem);
     $selectedTypeId = old('item_type_id', $feedItem->item_type_id ?? $itemTypes->firstWhere('code', 'FEED')?->id);
     $selectedVendor = old('default_vendor_id', $feedItem->default_vendor_id ?? '');
+    $defaultPrice = isset($feedItem) ? \App\Support\DecimalDisplay::normalize($feedItem->default_price) : 0;
 @endphp
 
 <form method="POST" action="{{ $isEditing ? route('feed-items.update', $feedItem) : route('feed-items.store') }}" class="space-y-6" data-item-form>
@@ -23,7 +24,7 @@
         </x-form.select>
 
         <x-form.input name="unit" label="Satuan" :value="$feedItem->unit ?? null" placeholder="Contoh: kg, liter, botol" maxlength="50" required autocomplete="off" />
-        <x-form.input name="default_price" label="Harga Acuan per Satuan" type="number" :value="$feedItem->default_price ?? 0" min="0" step="0.01" placeholder="20000" required inputmode="decimal" />
+        <x-form.input name="default_price" label="Harga Acuan per Satuan" type="number" :value="$defaultPrice" min="0" step="0.01" placeholder="20000" required inputmode="decimal" />
     </div>
 
     <x-form.textarea name="description" label="Deskripsi" :value="$feedItem->description ?? null" placeholder="Keterangan penggunaan atau karakteristik kebutuhan" />

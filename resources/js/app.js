@@ -8,6 +8,8 @@ import { initializeFilterControls } from './filter-controls';
 import { initializePageSizeControls } from './page-size';
 import { initializeVendorTypeLookups } from './vendor-type-lookups';
 import { initializeItemTypeLookups } from './item-type-lookups';
+import { formatLocalizedDecimal, multiplyDecimals } from './decimal-display';
+import { initializeNumericInputWheelGuard } from './numeric-input';
 
 const initializeSidebar = () => {
     const sidebar = document.querySelector('[data-sidebar]');
@@ -658,8 +660,8 @@ const initializePurchaseForm = () => {
     const cost = form.querySelector('[data-purchase-cost]');
     const total = form.querySelector('[data-purchase-total]');
     const update = () => {
-        const value = Math.max(Number.parseFloat(quantity?.value || '0'), 0) * Math.max(Number.parseFloat(cost?.value || '0'), 0);
-        if (total) total.textContent = `Rp${new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 }).format(value)}`;
+        const value = multiplyDecimals(quantity?.value || '0', cost?.value || '0');
+        if (total) total.textContent = `Rp${formatLocalizedDecimal(value, '0')}`;
     };
     item?.addEventListener('change', () => {
         const option = item.options[item.selectedIndex];
@@ -696,4 +698,5 @@ document.addEventListener('DOMContentLoaded', initializeDashboardCharts);
 document.addEventListener('DOMContentLoaded', initializeConfirmationDialog);
 document.addEventListener('DOMContentLoaded', initializeCrudModal);
 document.addEventListener('DOMContentLoaded', initializePageSizeControls);
+document.addEventListener('DOMContentLoaded', initializeNumericInputWheelGuard);
 document.addEventListener('app:content-loaded', initializeDynamicContent);

@@ -78,8 +78,7 @@
                         <tbody class="divide-y divide-neutral-100">
                             @foreach ($history as $row)
                                 @php
-                                    $quantityDecimals = floor(abs($row->quantity)) === abs($row->quantity) ? 0 : 3;
-                                    $quantityPrefix = $row->type === 'ADJUSTMENT' && $row->quantity > 0 ? '+' : '';
+                                    $quantityPrefix = $row->type === 'ADJUSTMENT' && \App\Support\DecimalDisplay::isPositive($row->quantity) ? '+' : '';
                                 @endphp
                                 <tr class="transition-colors hover:bg-neutral-50/70">
                                     <td class="px-5 py-3.5 sm:px-6"><a href="{{ $row->detail_url }}" class="font-mono text-xs font-medium text-neutral-900 hover:underline">{{ $row->transaction_number }}</a></td>
@@ -87,8 +86,8 @@
                                     <td class="px-5 py-3.5 text-center"><x-badge>{{ $row->type_label }}</x-badge></td>
                                     <td class="px-5 py-3.5 font-medium text-neutral-900">{{ $row->activity }}</td>
                                     <td class="px-5 py-3.5 text-center text-neutral-600">{{ $row->location_display }}</td>
-                                    <td class="px-5 py-3.5 text-center font-medium tabular-nums text-neutral-900">{{ $quantityPrefix }}{{ number_format($row->quantity, $quantityDecimals, ',', '.') }} {{ $row->unit }}</td>
-                                    <td class="px-5 py-3.5 text-center tabular-nums text-neutral-700">{{ $row->amount !== null ? 'Rp'.number_format($row->amount, 0, ',', '.') : '—' }}</td>
+                                    <td class="px-5 py-3.5 text-center font-medium tabular-nums text-neutral-900">{{ $quantityPrefix }}{{ \App\Support\DecimalDisplay::localized($row->quantity) }} {{ $row->unit }}</td>
+                                    <td class="px-5 py-3.5 text-center tabular-nums text-neutral-700">{{ $row->amount !== null ? 'Rp'.\App\Support\DecimalDisplay::localized($row->amount) : '—' }}</td>
                                     <td class="px-5 py-3.5 text-neutral-600">{{ $row->user_name ?: 'Sistem / Tidak tersedia' }}</td>
                                     <td class="px-5 py-3.5 pr-6 text-center"><x-button variant="secondary" :href="$row->detail_url">Detail</x-button></td>
                                 </tr>
